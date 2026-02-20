@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Демо — маршрут из response_simple.json</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f4f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        .topbar { background: #1e293b; color: #fff; padding: 14px 0; margin-bottom: 24px; }
+        .topbar .sub { color: #94a3b8; font-size: .82rem; margin-top: 2px; }
+
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+
+        #map {
+            width: 100%; height: 520px;
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,.12);
+            background: #e2e8f0;
+            position: relative;
+        }
+        .map-msg {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #64748b; font-size: .9rem; text-align: center; padding: 20px;
+        }
+
+        /* Route selector tabs */
+        .route-tab {
+            cursor: pointer; border: 2px solid #e2e8f0;
+            border-radius: 10px; padding: 10px 14px;
+            transition: all .15s; margin-bottom: 8px;
+        }
+        .route-tab.active { border-color: #3b82f6; background: #eff6ff; }
+        .route-tab:hover:not(.active) { border-color: #94a3b8; }
+        .route-badge { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+
+        /* Steps */
+        .step { display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: .85rem; }
+        .step:last-child { border-bottom: none; }
+        .step-icon {
+            width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 13px;
+        }
+        .ic-begin  { background: #dcfce7; }
+        .ic-end    { background: #dbeafe; }
+        .ic-turn   { background: #f1f5f9; }
+        .ic-cross  { background: #fef3c7; }
+
+        /* Score */
+        .score-circle {
+            width: 80px; height: 80px; border-radius: 50%; color: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 700;
+        }
+        .sc-val { font-size: 1.8rem; line-height: 1; }
+        .sc-max { font-size: .68rem; opacity: .8; }
+
+        .pl { color: #16a34a; font-weight: 600; }
+        .mn { color: #dc2626; font-weight: 600; }
+
+        /* Formula table */
+        .ftable { width: 100%; border-collapse: collapse; font-size: .82rem; }
+        .ftable td { padding: 3px 0; vertical-align: middle; }
+        .ftable .fn { color: #475569; font-weight: 600; }
+        .ftable .fv { text-align: right; font-weight: 700; white-space: nowrap; padding-left: 8px; }
+        .ftable .fhint { color: #64748b; font-size: .72rem; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; }
+        .ftable tr.fsep td { border-top: 2px solid #e2e8f0; padding-top: 6px; font-weight: 700; }
+        .thr { display: inline-block; font-size: .68rem; padding: 1px 6px; border-radius: 4px;
+               background: #f1f5f9; color: #64748b; margin: 1px 2px; }
+        .thr.hit { background: #dbeafe; color: #1e40af; font-weight: 700; }
+        .feq { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px;
+               padding: 8px 12px; margin-top: 10px; font-size: .82rem; text-align: center; }
+
+        /* AI */
+        .ai-score-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: #e2e8f0; color: #94a3b8;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-weight: 700; flex-shrink: 0;
+            transition: background .6s, color .3s;
+        }
+        .ai-score-circle.loaded { color: #fff; }
+        .ai-box { background: #f8faff; border: 1px solid #c7d7fb; border-radius: 10px; padding: 14px; }
+        .ai-chip { display: inline-block; background: #dbeafe; color: #1e40af; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 20px; margin-bottom: 8px; }
+
+        pre { font-size: .75rem; }
+        .spinner-border { width: 1rem; height: 1rem; }
+
+        /* Geometry colors */
+        .geo-fast     { color: #16a34a; }
+        .geo-normal   { color: #ca8a04; }
+        .geo-slow     { color: #dc2626; }
+        .geo-slow-jams{ color: #7f1d1d; }
+        .geo-ignore   { color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="container">
+        <div class="fw-bold fs-5">Маршрут из response_simple.json</div>
+        <div class="sub">2GIS Routing API v7 · реальные данные · Тверская Застава → Садовая-Черногрязская</div>
+    </div>
+</div>
+
+<div class="container pb-5">
+<div class="row g-4">
+
+<!-- ══ Левая панель ══════════════════════════════════════ -->
+<div class="col-lg-4">
+
+    <!-- Варианты маршрута -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="text-muted small fw-semibold text-uppercase mb-2">Варианты маршрута</div>
+            <div id="route-tabs"></div>
+        </div>
+    </div>
+
+    <!-- Шаги -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="text-muted small fw-semibold text-uppercase mb-2">Манёвры <span class="badge bg-light text-secondary ms-1">maneuvers[]</span></div>
+            <div id="steps-list"></div>
+        </div>
+    </div>
+
+    <!-- Геометрия (цвета пробок) -->
+    <div class="card">
+        <div class="card-body">
+            <div class="text-muted small fw-semibold text-uppercase mb-2">Цвета геометрии</div>
+            <div class="d-flex flex-wrap gap-2" style="font-size:.8rem">
+                <span class="geo-fast">● fast</span>
+                <span class="geo-normal">● normal</span>
+                <span class="geo-slow">● slow</span>
+                <span class="geo-slow-jams fw-bold">● slow-jams</span>
+                <span class="geo-ignore">● ignore</span>
+            </div>
+            <div class="text-muted mt-2" style="font-size:.75rem">Поле <code>geometry[].color</code> в каждом манёвре</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ══ Центральная колонка: карта ═══════════════════════ -->
+<div class="col-lg-8">
+    <div id="map">
+        <div class="map-msg" id="map-msg">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div>Загружаем карту 2GIS…</div>
+        </div>
+    </div>
+    <div id="map-err" class="alert alert-warning mt-2 d-none small"></div>
+
+    <!-- Оценка + AI -->
+    <div class="row g-3 mt-1">
+
+        <!-- Оценка -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small fw-semibold text-uppercase mb-3">Оценка по формуле</div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="score-circle" id="score-circle" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+                            <span class="sc-val" id="sc-val">—</span>
+                            <span class="sc-max">/ 10</span>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size:.73rem;letter-spacing:.04em">ИТОГ ПО ФОРМУЛЕ A + B + C − D</div>
+                            <div id="sc-badge" class="mt-1"></div>
+                        </div>
+                    </div>
+                    <div id="breakdown"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="text-muted small fw-semibold text-uppercase mb-3">ChatGPT оценка</div>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="ai-score-circle" id="ai-circle">
+                            <span class="sc-val" id="ai-val">?</span>
+                            <span class="sc-max">/ 10</span>
+                        </div>
+                        <div>
+                            <div class="text-muted" style="font-size:.73rem;letter-spacing:.04em">ОЦЕНКА GPT-4O-MINI</div>
+                            <div id="ai-badge" class="mt-1">
+                                <span class="badge bg-light text-secondary">не запрошено</span>
+                            </div>
+                            <button id="ai-btn" class="btn btn-primary btn-sm mt-2">
+                                Оценить маршрут
+                            </button>
+                        </div>
+                    </div>
+                    <div id="ai-result" class="d-none flex-grow-1">
+                        <div class="ai-box">
+                            <div class="ai-chip">AI · gpt-4o-mini</div>
+                            <div id="ai-text" style="font-size:.85rem;line-height:1.6;color:#334155"></div>
+                        </div>
+                    </div>
+                    <div id="ai-err" class="alert alert-danger d-none small mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</div>
+</div><!-- /container -->
+
+<!-- ══ Данные из response_simple.json ═══════════════════ -->
+<script>
+const API_KEY = 'bc9d537e-6e92-4751-9017-fe5c28958f30';
+
+// Реальный ответ 2GIS Routing API из response_simple.json
+const ROUTE_DATA = {"message":null,"query":{"filters":["dirt_road","toll_road","ferry"],"locale":"ru","output":"detailed","points":[{"lat":55.775364,"lon":37.582591,"type":"stop"},{"lat":55.765036,"lon":37.656625,"type":"stop"}],"transport":"driving"},"result":[{"algorithm":"с учётом пробок","begin_pedestrian_path":{"geometry":{"selection":"LINESTRING(37.582590 55.775363, 37.583086 55.775486)"}},"end_pedestrian_path":{"geometry":{"selection":"LINESTRING(37.656748 55.764924, 37.656625 55.765036)"}},"filter_road_types":["highway"],"id":"15337550825529358907","maneuvers":[{"comment":"start","icon":"start","id":"4374223878389382766","outcoming_path":{"distance":30,"duration":8,"geometry":[{"color":"normal","length":30,"selection":"LINESTRING(37.583086 55.775486, 37.583150 55.775405, 37.583231 55.775307, 37.583253 55.775281, 37.583307 55.775231)","style":"normal"}],"names":["Тверская Застава площадь"]},"outcoming_path_comment":"30 м прямо","type":"begin"},{"comment":"Поворот налево на ул. Лесная","icon":"crossroad_left","id":"16964532553980920794","outcoming_path":{"distance":406,"duration":116,"geometry":[{"color":"slow","length":76,"selection":"LINESTRING(37.583307 55.775231, 37.583561 55.775318, 37.583628 55.775341, 37.583734 55.775385, 37.583827 55.775434, 37.584035 55.775570, 37.584217 55.775689)","style":"normal"},{"color":"normal","length":88,"selection":"LINESTRING(37.584217 55.775689, 37.584347 55.775775, 37.584624 55.775956, 37.584979 55.776188, 37.585058 55.776240, 37.585154 55.776303)","style":"normal"},{"color":"normal","length":15,"selection":"LINESTRING(37.585154 55.776303, 37.585381 55.776355)","style":"normal"},{"color":"fast","length":50,"selection":"LINESTRING(37.585381 55.776355, 37.585568 55.776469, 37.585606 55.776493, 37.585928 55.776703)","style":"normal"},{"color":"normal","length":177,"selection":"LINESTRING(37.585928 55.776703, 37.586761 55.777249, 37.586856 55.777311, 37.586989 55.777398, 37.587695 55.777860, 37.587795 55.777926)","style":"normal"}],"names":["Лесная"]},"outcoming_path_comment":"400 м прямо","turn_angle":-92,"turn_direction":"left","type":"crossroad"},{"comment":"Поворот направо на ул. Александра Невского","icon":"crossroad_right","id":"18345566012543006196","outcoming_path":{"distance":988,"duration":236,"geometry":[{"color":"fast","length":216,"selection":"LINESTRING(37.587795 55.777926, 37.587857 55.777896, 37.588159 55.777750, 37.588473 55.777598, 37.588580 55.777546, 37.588953 55.777365, 37.589107 55.777290, 37.589488 55.777105, 37.589680 55.777012, 37.589762 55.776972, 37.590495 55.776617)","style":"normal"},{"color":"normal","length":65,"selection":"LINESTRING(37.590495 55.776617, 37.590578 55.776576, 37.590882 55.776429, 37.591177 55.776285, 37.591234 55.776258, 37.591311 55.776220)","style":"normal"},{"color":"fast","length":707,"selection":"LINESTRING(37.591311 55.776220, 37.591564 55.776098, 37.591859 55.775954, 37.591980 55.775878, 37.592157 55.775711, 37.592301 55.775575, 37.592408 55.775503, 37.592464 55.775451, 37.593157 55.774776, 37.593247 55.774725, 37.593407 55.774635, 37.593491 55.774586, 37.593856 55.774372, 37.594049 55.774259, 37.594318 55.774102, 37.594774 55.773836, 37.594863 55.773783, 37.594953 55.773731, 37.595721 55.773282, 37.595961 55.773142, 37.596416 55.772876, 37.596750 55.772681, 37.596834 55.772632, 37.596908 55.772588, 37.597141 55.772452, 37.597349 55.772331, 37.597721 55.772113, 37.598051 55.771921, 37.598556 55.771625, 37.598820 55.771471, 37.598908 55.771419)","style":"normal"}],"names":["Александра Невского"]},"outcoming_path_comment":"1 км прямо","turn_angle":90,"turn_direction":"right","type":"crossroad"},{"comment":"Поворот направо на ул. Оружейный переулок","icon":"crossroad_right","id":"10869910712975086040","outcoming_path":{"distance":89,"duration":15,"geometry":[{"color":"fast","length":89,"selection":"LINESTRING(37.598908 55.771419, 37.597742 55.770949)","style":"normal"}],"names":["Оружейный переулок"]},"outcoming_path_comment":"90 м прямо","turn_angle":98,"turn_direction":"right","type":"crossroad"},{"comment":"Держитесь левее","icon":"crossroad_keep_left","id":"5216707865107290700","outcoming_path":{"distance":112,"duration":22,"geometry":[{"color":"fast","length":91,"selection":"LINESTRING(37.597742 55.770949, 37.597322 55.770779, 37.597245 55.770734, 37.597197 55.770689, 37.597175 55.770645, 37.597174 55.770599, 37.597186 55.770557, 37.597215 55.770514, 37.597261 55.770473, 37.597375 55.770397, 37.597450 55.770347, 37.597491 55.770320)","style":"normal"},{"color":"normal","length":21,"selection":"LINESTRING(37.597491 55.770320, 37.597716 55.770172)","style":"normal"}],"names":[]},"outcoming_path_comment":"100 м прямо","turn_angle":-29,"turn_direction":"keep_left","type":"crossroad"},{"comment":"Поворот налево на ул. Садовая-Триумфальная","icon":"crossroad_left","id":"8979973283683786126","outcoming_path":{"distance":4042,"duration":1461,"geometry":[{"color":"normal","length":496,"selection":"LINESTRING(37.597716 55.770172, 37.597809 55.770140, 37.597831 55.770135, 37.597862 55.770132, 37.597883 55.770133, 37.597914 55.770137, 37.598008 55.770158, 37.598076 55.770192, 37.598210 55.770249, 37.599275 55.770728, 37.599882 55.770936, 37.600050 55.770989, 37.600407 55.771103, 37.600831 55.771230, 37.600914 55.771254, 37.600957 55.771272, 37.601329 55.771460, 37.602336 55.771763, 37.602421 55.771789, 37.602861 55.771922, 37.603929 55.772247, 37.604227 55.772338, 37.604516 55.772426)","style":"normal"},{"color":"fast","length":291,"selection":"LINESTRING(37.604516 55.772426, 37.605210 55.772564, 37.605213 55.772565, 37.605268 55.772575, 37.605728 55.772651, 37.605822 55.772664, 37.607062 55.772839, 37.607333 55.772877, 37.607382 55.772884, 37.608251 55.772986, 37.609050 55.773088)","style":"normal"},{"color":"normal","length":106,"selection":"LINESTRING(37.609050 55.773088, 37.609234 55.773109, 37.610156 55.773194, 37.610728 55.773247)","style":"normal"},{"color":"fast","length":416,"selection":"LINESTRING(37.610728 55.773247, 37.611026 55.773277, 37.611498 55.773310, 37.612248 55.773363, 37.612442 55.773370, 37.613457 55.773408, 37.615054 55.773470, 37.617345 55.773557)","style":"normal"},{"color":"fast","length":370,"selection":"LINESTRING(37.617345 55.773557, 37.619000 55.773621, 37.619209 55.773628, 37.621035 55.773684, 37.621922 55.773690, 37.623161 55.773671, 37.623250 55.773668)","style":"bridge"},{"color":"normal","length":250,"selection":"LINESTRING(37.623250 55.773668, 37.624510 55.773622, 37.625672 55.773548, 37.625906 55.773531, 37.626549 55.773483, 37.627213 55.773398)","style":"normal"},{"color":"slow","length":419,"selection":"LINESTRING(37.627213 55.773398, 37.627407 55.773378, 37.627898 55.773317, 37.628220 55.773274, 37.629057 55.773153, 37.630300 55.772978, 37.630537 55.772946, 37.631810 55.772768, 37.631859 55.772761, 37.632283 55.772702, 37.632528 55.772668, 37.633038 55.772597, 37.633286 55.772569, 37.633809 55.772511)","style":"normal"},{"color":"slow-jams","length":525,"selection":"LINESTRING(37.633809 55.772511, 37.635934 55.772276, 37.636482 55.772197, 37.636863 55.772130, 37.637246 55.772053, 37.637383 55.772024, 37.637746 55.771946, 37.638398 55.771787, 37.638671 55.771709, 37.639223 55.771539, 37.639458 55.771467, 37.640138 55.771258, 37.641596 55.770815)","style":"normal"},{"color":"slow","length":148,"selection":"LINESTRING(37.641596 55.770815, 37.642386 55.770573, 37.642720 55.770474, 37.643276 55.770304, 37.643525 55.770234, 37.643708 55.770178)","style":"normal"},{"color":"normal","length":284,"selection":"LINESTRING(37.643708 55.770178, 37.643975 55.770092, 37.644348 55.769976, 37.644647 55.769882, 37.645657 55.769580, 37.645818 55.769531, 37.646121 55.769442, 37.646389 55.769364, 37.647223 55.769158, 37.647789 55.769017)","style":"normal"},{"color":"fast","length":417,"selection":"LINESTRING(37.647789 55.769017, 37.648564 55.768776, 37.649337 55.768557, 37.649691 55.768459, 37.649817 55.768424, 37.649886 55.768391, 37.650113 55.768283, 37.650280 55.768171, 37.651022 55.767635, 37.651497 55.767307, 37.651966 55.766988, 37.652654 55.766522)","style":"normal"},{"color":"normal","length":76,"selection":"LINESTRING(37.652654 55.766522, 37.653423 55.765990)","style":"normal"},{"color":"fast","length":244,"selection":"LINESTRING(37.653423 55.765990, 37.653591 55.765874, 37.653911 55.765652, 37.654967 55.764923, 37.655597 55.764466, 37.655881 55.764258)","style":"normal"}],"names":["Садовая-Триумфальная"]},"outcoming_path_comment":"4 км прямо","turn_angle":-91,"turn_direction":"left","type":"crossroad"},{"comment":"Разворот на ул. Садовая-Черногрязская","icon":"turn_over_right_hand","id":"10244709763460428463","outcoming_path":{"distance":71,"duration":26,"geometry":[{"color":"normal","length":22,"selection":"LINESTRING(37.655881 55.764258, 37.655917 55.764246, 37.655955 55.764239, 37.655993 55.764237, 37.656027 55.764240, 37.656049 55.764245, 37.656067 55.764253, 37.656086 55.764271, 37.656095 55.764288, 37.656094 55.764310, 37.656076 55.764339)","style":"normal"},{"color":"slow","length":49,"selection":"LINESTRING(37.656076 55.764339, 37.655591 55.764691)","style":"normal"}],"names":["Садовая-Черногрязская"]},"outcoming_path_comment":"70 м прямо","turn_angle":-180,"turn_direction":"uturn_left","type":"crossroad"},{"comment":"Поворот направо","icon":"crossroad_right","id":"4287807693496540407","outcoming_path":{"distance":54,"duration":18,"geometry":[{"color":"ignore","length":21,"selection":"LINESTRING(37.655591 55.764691, 37.655782 55.764778, 37.655865 55.764817)","style":"living_zone"},{"color":"ignore","length":16,"selection":"LINESTRING(37.655865 55.764817, 37.656064 55.764909)","style":"archway"},{"color":"ignore","length":17,"selection":"LINESTRING(37.656064 55.764909, 37.656228 55.764957, 37.656303 55.764992)","style":"living_zone"}],"names":[]},"outcoming_path_comment":"50 м прямо","turn_angle":89,"turn_direction":"right","type":"crossroad"},{"comment":"Поворот направо","icon":"crossroad_right","id":"2869600752127429903","outcoming_path":{"distance":36,"duration":12,"geometry":[{"color":"ignore","length":36,"selection":"LINESTRING(37.656303 55.764992, 37.656485 55.764865, 37.656510 55.764857, 37.656538 55.764857, 37.656572 55.764863, 37.656748 55.764924)","style":"living_zone"}],"names":[]},"outcoming_path_comment":"40 м прямо","turn_angle":88,"turn_direction":"right","type":"crossroad"},{"comment":"finish","icon":"finish","id":"18249790006739505861","outcoming_path_comment":"Вы на месте!","type":"end"}],"reliability":0,"total_distance":5828,"total_duration":1914,"type":"carrouting","ui_total_distance":{"unit":"км","value":"5.8"},"ui_total_duration":"31 мин"},{"algorithm":"с учётом пробок","begin_pedestrian_path":{"geometry":{"selection":"LINESTRING(37.582590 55.775363, 37.583086 55.775486)"}},"end_pedestrian_path":{"geometry":{"selection":"LINESTRING(37.656748 55.764924, 37.656625 55.765036)"}},"filter_road_types":["highway"],"id":"16603265788899600291","maneuvers":[{"comment":"start","icon":"start","outcoming_path":{"distance":30,"duration":8,"geometry":[{"color":"normal","length":30,"selection":"LINESTRING(37.583086 55.775486, 37.583150 55.775405, 37.583231 55.775307, 37.583253 55.775281, 37.583307 55.775231)","style":"normal"}],"names":["Тверская Застава площадь"]},"outcoming_path_comment":"30 м прямо","type":"begin"},{"comment":"Поворот налево","outcoming_path":{"distance":164,"duration":52,"geometry":[{"color":"slow","length":76,"selection":"LINESTRING(37.583307 55.775231, 37.583561 55.775318, 37.583628 55.775341, 37.583734 55.775385, 37.583827 55.775434, 37.584035 55.775570, 37.584217 55.775689)","style":"normal"},{"color":"normal","length":88,"selection":"LINESTRING(37.584217 55.775689, 37.584347 55.775775, 37.584624 55.775956, 37.584979 55.776188, 37.585058 55.776240, 37.585154 55.776303)","style":"normal"}],"names":[]},"outcoming_path_comment":"150 м прямо","turn_angle":-92,"turn_direction":"left","type":"crossroad"},{"comment":"Поворот направо на ул. 1-я Тверская-Ямская","outcoming_path":{"distance":1256,"duration":203,"geometry":[{"color":"normal","length":87,"selection":"LINESTRING(37.585154 55.776303, 37.585445 55.776157, 37.585492 55.776131, 37.585658 55.776039, 37.586158 55.775747)","style":"normal"},{"color":"fast","length":191,"selection":"LINESTRING(37.586158 55.775747, 37.588010 55.774663, 37.588280 55.774505)","style":"normal"},{"color":"normal","length":338,"selection":"LINESTRING(37.588280 55.774505, 37.590369 55.773281, 37.590635 55.773126, 37.592026 55.772311)","style":"normal"},{"color":"fast","length":27,"selection":"LINESTRING(37.592026 55.772311, 37.592333 55.772132)","style":"normal"},{"color":"normal","length":158,"selection":"LINESTRING(37.592333 55.772132, 37.594081 55.771108)","style":"normal"},{"color":"fast","length":455,"selection":"LINESTRING(37.594081 55.771108, 37.594993 55.770574, 37.595598 55.770219, 37.595740 55.770136, 37.595903 55.770019, 37.596125 55.769859, 37.596682 55.769461, 37.596711 55.769445, 37.597332 55.769104, 37.598026 55.768722, 37.599143 55.768109)","style":"normal"}],"names":["1-я Тверская-Ямская"]},"outcoming_path_comment":"1.3 км прямо","turn_angle":91,"turn_direction":"right","type":"crossroad"},{"comment":"Поворот направо на ул. Благовещенский переулок","outcoming_path":{"distance":282,"duration":94,"geometry":[{"color":"fast","length":282,"selection":"LINESTRING(37.599143 55.768109, 37.598984 55.768020, 37.598486 55.767739, 37.598289 55.767630, 37.597911 55.767336, 37.597784 55.767047, 37.597296 55.766836, 37.595993 55.766315)","style":"normal"}],"names":["Благовещенский переулок"]},"outcoming_path_comment":"300 м прямо","turn_angle":91,"turn_direction":"right","type":"crossroad"},{"comment":"Поворот направо на ул. Ермолаевский переулок","outcoming_path":{"distance":165,"duration":97,"geometry":[{"color":"slow","length":165,"selection":"LINESTRING(37.595993 55.766315, 37.594681 55.766371, 37.593957 55.766079, 37.593599 55.765935)","style":"normal"}],"names":["Ермолаевский переулок"]},"outcoming_path_comment":"150 м прямо","turn_angle":67,"turn_direction":"right","type":"crossroad"},{"comment":"Поворот направо на ул. Большая Садовая","outcoming_path":{"distance":4545,"duration":1462,"geometry":[{"color":"fast","length":319,"selection":"LINESTRING(37.592175 55.766807, 37.592988 55.767375, 37.594008 55.768087, 37.595214 55.768858, 37.595486 55.769004)","style":"normal"},{"color":"fast","length":196,"selection":"LINESTRING(37.595486 55.769004, 37.596454 55.769495, 37.597838 55.770195)","style":"tunnel"},{"color":"normal","length":484,"selection":"LINESTRING(37.597838 55.770195, 37.599125 55.770758, 37.601329 55.771460, 37.604516 55.772426)","style":"normal"},{"color":"fast","length":416,"selection":"LINESTRING(37.604516 55.772426, 37.610728 55.773247)","style":"normal"},{"color":"fast","length":370,"selection":"LINESTRING(37.617345 55.773557, 37.623250 55.773668)","style":"bridge"},{"color":"slow","length":419,"selection":"LINESTRING(37.623250 55.773668, 37.633809 55.772511)","style":"normal"},{"color":"slow-jams","length":525,"selection":"LINESTRING(37.633809 55.772511, 37.641596 55.770815)","style":"normal"},{"color":"normal","length":284,"selection":"LINESTRING(37.643708 55.770178, 37.647789 55.769017)","style":"normal"},{"color":"fast","length":417,"selection":"LINESTRING(37.647789 55.769017, 37.652654 55.766522)","style":"normal"},{"color":"fast","length":244,"selection":"LINESTRING(37.653423 55.765990, 37.655881 55.764258)","style":"normal"}],"names":["Большая Садовая"]},"outcoming_path_comment":"4.5 км прямо","turn_angle":82,"turn_direction":"right","type":"crossroad"},{"comment":"Разворот на ул. Садовая-Черногрязская","outcoming_path":{"distance":71,"duration":26,"geometry":[{"color":"slow","length":71,"selection":"LINESTRING(37.655881 55.764258, 37.655591 55.764691)","style":"normal"}],"names":["Садовая-Черногрязская"]},"outcoming_path_comment":"70 м прямо","turn_angle":-180,"turn_direction":"uturn_left","type":"crossroad"},{"comment":"Поворот направо","outcoming_path":{"distance":90,"duration":30,"geometry":[{"color":"ignore","length":90,"selection":"LINESTRING(37.655591 55.764691, 37.656748 55.764924)","style":"living_zone"}],"names":[]},"outcoming_path_comment":"90 м прямо","type":"crossroad"},{"comment":"finish","outcoming_path_comment":"Вы на месте!","type":"end"}],"reliability":0,"total_distance":6732,"total_duration":2046,"type":"carrouting","ui_total_distance":{"unit":"км","value":"6.7"},"ui_total_duration":"34 мин"}],"status":"OK","type":"result"};
+</script>
+
+<script src="https://mapgl.2gis.com/api/js?key=bc9d537e-6e92-4751-9017-fe5c28958f30"></script>
+<script>
+// ── Утилиты ────────────────────────────────────────────────────
+function parseLinestring(wkt) {
+    const m = wkt.match(/LINESTRING\((.+)\)/);
+    if (!m) return [];
+    return m[1].split(',').map(s => {
+        const [lon, lat] = s.trim().split(' ').map(Number);
+        return [lon, lat];
+    });
+}
+
+function routeCoords(route) {
+    const pts = [];
+    const bSel = route.begin_pedestrian_path?.geometry?.selection;
+    if (bSel) pts.push(...parseLinestring(bSel));
+    (route.maneuvers || []).forEach(m => {
+        (m.outcoming_path?.geometry || []).forEach(g => {
+            pts.push(...parseLinestring(g.selection));
+        });
+    });
+    const eSel = route.end_pedestrian_path?.geometry?.selection;
+    if (eSel) pts.push(...parseLinestring(eSel));
+    return pts;
+}
+
+// Цвет сегмента по полю color
+const GEO_COLORS = {
+    fast:      '#16a34a',
+    normal:    '#3b82f6',
+    slow:      '#f59e0b',
+    'slow-jams': '#dc2626',
+    ignore:    '#94a3b8',
+    default:   '#6366f1',
+};
+
+// ── Состояние ──────────────────────────────────────────────────
+let map = null;
+let mapReady = false;
+let activeIdx = 0;
+let polylines = [];
+let markers = [];
+
+// ── Инициализация карты ────────────────────────────────────────
+function initMap() {
+    const msg = document.getElementById('map-msg');
+    try {
+        map = new mapgl.Map('map', { center: [37.62, 55.77], zoom: 11, key: API_KEY });
+        msg.style.display = 'none';
+        mapReady = true;
+        showRoute(0);
+    } catch(e) {
+        msg.innerHTML = `<div class="text-danger fs-2 mb-2">⚠</div>
+            <div class="fw-semibold">Карта не загрузилась</div>
+            <div class="text-muted small mt-1">${e.message}</div>`;
+    }
+}
+
+window.addEventListener('load', () => {
+    if (window.mapgl) { initMap(); }
+    else {
+        const s = document.createElement('script');
+        s.src = `https://mapgl.2gis.com/api/js?key=${API_KEY}`;
+        s.onload  = initMap;
+        s.onerror = () => {
+            document.getElementById('map-msg').innerHTML =
+                '<div class="text-warning fs-2">⚠</div><div>Карта недоступна (VPN?)</div>' +
+                '<div class="text-muted small mt-1">Данные и AI-анализ работают без карты</div>';
+        };
+        document.head.appendChild(s);
+    }
+});
+
+// ── Рисуем маршрут ──────────────────────────────────────────────
+function clearMap() {
+    polylines.forEach(p => p.destroy());
+    markers.forEach(m => m.destroy());
+    polylines = []; markers = [];
+}
+
+function showRoute(idx) {
+    if (!mapReady) return;
+    clearMap();
+
+    const route = ROUTE_DATA.result[idx];
+    const allCoords = routeCoords(route);
+    if (allCoords.length < 2) return;
+
+    // Рисуем каждый сегмент своим цветом
+    (route.maneuvers || []).forEach(maneuver => {
+        (maneuver.outcoming_path?.geometry || []).forEach(geo => {
+            const coords = parseLinestring(geo.selection);
+            if (coords.length < 2) return;
+            const color = GEO_COLORS[geo.color] || GEO_COLORS.default;
+            polylines.push(new mapgl.Polyline(map, { coordinates: coords, width: 5, color, opacity: 0.9 }));
+        });
+    });
+
+    // Пешеходные отрезки
+    [route.begin_pedestrian_path, route.end_pedestrian_path].forEach(p => {
+        if (!p?.geometry?.selection) return;
+        const coords = parseLinestring(p.geometry.selection);
+        if (coords.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: coords, width: 4, color: '#8b5cf6', opacity: 0.8 }));
+    });
+
+    // Маркеры А и B
+    const first = allCoords[0];
+    const last  = allCoords[allCoords.length - 1];
+    markers.push(new mapgl.Marker(map, { coordinates: first, color: '#22c55e' }));
+    markers.push(new mapgl.Marker(map, { coordinates: last,  color: '#ef4444' }));
+
+    // Подогнать вид
+    const lons = allCoords.map(c => c[0]);
+    const lats = allCoords.map(c => c[1]);
+    const cx = (Math.min(...lons) + Math.max(...lons)) / 2;
+    const cy = (Math.min(...lats) + Math.max(...lats)) / 2;
+    map.setCenter([cx, cy]);
+    const span = Math.max(Math.max(...lons)-Math.min(...lons), Math.max(...lats)-Math.min(...lats));
+    map.setZoom(span > 0.1 ? 12 : span > 0.05 ? 13 : 14);
+}
+
+// ── Табы вариантов маршрута ─────────────────────────────────────
+const ICONS = { begin:'🚶', end:'🏁', crossroad:'↪', crossroad_left:'↩', crossroad_right:'↪', crossroad_keep_left:'↰', turn_over_right_hand:'↩', default:'•' };
+const TYPE_CLS = { begin:'ic-begin', end:'ic-end', crossroad:'ic-turn', crossroad_left:'ic-turn', crossroad_right:'ic-turn', turn_over_right_hand:'ic-cross', default:'ic-turn' };
+
+function buildTabs() {
+    const el = document.getElementById('route-tabs');
+    el.innerHTML = ROUTE_DATA.result.map((r, i) => `
+        <div class="route-tab ${i===0?'active':''}" data-idx="${i}" onclick="selectRoute(${i})">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Маршрут ${i+1}</span>
+                <span class="route-badge bg-${i===0?'primary':'secondary'} text-white">${r.ui_total_duration}</span>
+            </div>
+            <div class="text-muted small mt-1">${r.ui_total_distance.value} ${r.ui_total_distance.unit} · ${r.algorithm}</div>
+        </div>`).join('');
+}
+
+function selectRoute(idx) {
+    activeIdx = idx;
+    document.querySelectorAll('.route-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+    renderSteps(idx);
+    renderScore(idx);
+    showRoute(idx);
+}
+
+function renderSteps(idx) {
+    const route = ROUTE_DATA.result[idx];
+    document.getElementById('steps-list').innerHTML = (route.maneuvers || []).map(m => {
+        const icon = ICONS[m.icon] || ICONS[m.type] || ICONS.default;
+        const cls  = TYPE_CLS[m.type] || TYPE_CLS.default;
+        const sub  = m.outcoming_path_comment || '';
+        const dist = m.outcoming_path?.distance ? `${m.outcoming_path.distance} м` : '';
+        return `<div class="step">
+            <div class="step-icon ${cls}">${icon}</div>
+            <div>
+                <div>${m.comment || m.type}</div>
+                <div class="d-flex gap-2 mt-1 flex-wrap">
+                    <span class="badge bg-light text-secondary" style="font-size:.68rem">${m.type}</span>
+                    ${dist ? `<span class="text-muted" style="font-size:.75rem">${dist}</span>` : ''}
+                    ${sub ? `<span class="text-muted" style="font-size:.75rem">${sub}</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderScore(idx) {
+    const r      = ROUTE_DATA.result[idx];
+    const min    = Math.round(r.total_duration / 60);
+    const kmRaw  = r.total_distance / 1000;
+    const km     = kmRaw.toFixed(1);
+    const turns  = (r.maneuvers||[]).filter(m =>
+        m.type === 'crossroad' || m.type === 'crossroad_left' || m.type === 'crossroad_right'
+    ).length;
+
+    // A — Время (макс. 4)
+    const time   = min <= 15 ? 4 : min <= 25 ? 3 : min <= 40 ? 2 : 1;
+    // B — Расстояние (макс. 3)
+    const safety = kmRaw <= 2 ? 3 : kmRaw <= 5 ? 2 : 1;
+    // C — Пересечения (макс. 3): тип не учитываем, только количество
+    const quality = turns === 0 ? 3 : turns <= 3 ? 2 : 1;
+    // D — Штраф равномерный: 0.4 за каждое пересечение, лимит 2.0
+    const penaltyCalc = +(turns * 0.4).toFixed(1);
+    const penaltyFinal = Math.min(2, penaltyCalc);
+    const penalty = penaltyFinal.toFixed(1);
+
+    const total = Math.max(0, Math.min(10, +(time + safety + quality - penaltyFinal).toFixed(1)));
+
+    const [bg, label, lc] = total >= 8 ? ['#11998e,#38ef7d','Отлично','success']
+        : total >= 6 ? ['#f7971e,#ffd200','Хорошо','warning']
+        : total >= 4 ? ['#667eea,#764ba2','Умеренно','secondary']
+        : ['#cb2d3e,#ef473a','Сложный','danger'];
+
+    document.getElementById('score-circle').style.background = `linear-gradient(135deg,${bg})`;
+    document.getElementById('sc-val').textContent = total;
+    document.getElementById('sc-badge').innerHTML = `<span class="badge bg-${lc}">${label}</span>`;
+
+    // Подсвечиваем сработавший порог
+    const thr = (label, active) => `<span class="thr${active?' hit':''}">${label}</span>`;
+
+    const timeThresholds = [
+        thr('≤ 15 мин → 4', time === 4),
+        thr('≤ 25 мин → 3', time === 3),
+        thr('≤ 40 мин → 2', time === 2),
+        thr('> 40 мин → 1', time === 1),
+    ].join('');
+
+    const safetyThresholds = [
+        thr('≤ 2 км → 3', safety === 3),
+        thr('≤ 5 км → 2', safety === 2),
+        thr('> 5 км → 1', safety === 1),
+    ].join('');
+
+    const qualityThresholds = [
+        thr('0 → 3',    quality === 3),
+        thr('≤ 3 → 2',  quality === 2),
+        thr('> 3 → 1',  quality === 1),
+    ].join('');
+
+    const penaltyNote = penaltyCalc > 2
+        ? `${turns} × 0.4 = ${penaltyCalc} → лимит 2.0`
+        : `${turns} × 0.4 = ${penaltyCalc}`;
+
+    document.getElementById('breakdown').innerHTML = `
+    <table class="ftable">
+      <tr>
+        <td class="fn">A — Время <span class="text-muted fw-normal">(макс. 4)</span></td>
+        <td class="fv pl">+${time}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="fhint">
+          Измерено: <strong>${min} мин</strong><br>${timeThresholds}
+        </td>
+      </tr>
+      <tr>
+        <td class="fn">B — Расстояние <span class="text-muted fw-normal">(макс. 3)</span></td>
+        <td class="fv pl">+${safety}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="fhint">
+          Измерено: <strong>${km} км</strong><br>
+          ${safetyThresholds}
+        </td>
+      </tr>
+      <tr>
+        <td class="fn">C — Пересечения <span class="text-muted fw-normal">(макс. 3)</span></td>
+        <td class="fv pl">+${quality}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="fhint">
+          Повороты/пересечения: <strong>${turns} шт</strong><br>
+          ${qualityThresholds}
+        </td>
+      </tr>
+      <tr>
+        <td class="fn">D — Штраф</td>
+        <td class="fv mn">−${penalty}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="fhint">
+          ${penaltyNote}
+        </td>
+      </tr>
+      <tr class="fsep">
+        <td class="fn">Итог</td>
+        <td class="fv" style="color:#1d4ed8">${total} / 10</td>
+      </tr>
+    </table>
+    <div class="feq">
+      <span class="text-muted">A + B + C − D =</span>
+      <strong>${time} + ${safety} + ${quality} − ${penalty} =
+      <span style="color:#1d4ed8;font-size:1rem"> ${total}</span> / 10</strong>
+    </div>`;
+
+    // сохраняем для AI
+    window._score = { total, timeScore: time, safetyScore: safety, qualityScore: quality, roadPenalty: penalty, crossingPenalty: 0 };
+}
+
+// ── AI оценка ───────────────────────────────────────────────────
+document.getElementById('ai-btn').addEventListener('click', async () => {
+    const btn    = document.getElementById('ai-btn');
+    const circle = document.getElementById('ai-circle');
+    const r      = ROUTE_DATA.result[activeIdx];
+
+    // Сбрасываем состояние
+    circle.style.background = '#e2e8f0';
+    circle.classList.remove('loaded');
+    document.getElementById('ai-val').textContent = '…';
+    document.getElementById('ai-badge').innerHTML = '<span class="badge bg-light text-secondary">загрузка…</span>';
+    document.getElementById('ai-result').classList.add('d-none');
+    document.getElementById('ai-err').classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border me-1"></span>Запрос…';
+
+    // Передаём сырые манёвры — без типов пересечений, без формульной оценки
+    const payload = {
+        duration_min: Math.round(r.total_duration / 60),
+        distance_m:   r.total_distance,
+        maneuvers:    (r.maneuvers || []).map(m => ({
+            type:     m.type,
+            comment:  m.comment || '',
+            distance: m.outcoming_path?.distance || 0,
+        })),
+    };
+
+    try {
+        const res  = await fetch('/api/analyze', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById('ai-err').textContent = data.error;
+            document.getElementById('ai-err').classList.remove('d-none');
+            document.getElementById('ai-val').textContent = '!';
+            document.getElementById('ai-badge').innerHTML = '<span class="badge bg-danger">Ошибка</span>';
+            return;
+        }
+
+        // Показываем AI-оценку
+        if (data.score !== null && data.score !== undefined) {
+            const s = data.score;
+            const [bg, label, lc] = s >= 8 ? ['#11998e,#38ef7d', 'Отлично', 'success']
+                : s >= 6 ? ['#f7971e,#ffd200', 'Хорошо', 'warning']
+                : s >= 4 ? ['#667eea,#764ba2', 'Умеренно', 'secondary']
+                : ['#cb2d3e,#ef473a', 'Сложный', 'danger'];
+
+            circle.style.background = `linear-gradient(135deg,${bg})`;
+            circle.classList.add('loaded');
+            document.getElementById('ai-val').textContent = s;
+            document.getElementById('ai-badge').innerHTML = `<span class="badge bg-${lc}">${label}</span>`;
+        } else {
+            document.getElementById('ai-val').textContent = '?';
+            document.getElementById('ai-badge').innerHTML = '<span class="badge bg-secondary">нет оценки</span>';
+        }
+
+        if (data.html) {
+            document.getElementById('ai-text').innerHTML = data.html;
+            document.getElementById('ai-result').classList.remove('d-none');
+        }
+    } catch(e) {
+        document.getElementById('ai-err').textContent = e.message;
+        document.getElementById('ai-err').classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Обновить оценку';
+    }
+});
+
+// ── Инит UI ────────────────────────────────────────────────────
+buildTabs();
+renderSteps(0);
+renderScore(0);
+</script>
+</body>
+</html>

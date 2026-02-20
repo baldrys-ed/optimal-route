@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удобный путь</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="py-4 mb-2">
+    <div class="container">
+        <h1 class="fw-bold mb-1">Удобный путь</h1>
+        <p class="text-muted mb-0">Найдите ближайшие объекты и оцените пешеходный маршрут</p>
+    </div>
+</header>
+
+<main class="container pb-5">
+    <div class="row g-4">
+
+        <!-- Left panel -->
+        <div class="col-lg-4">
+
+            <!-- Search panel -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Поиск маршрута</h5>
+
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">
+                            <span class="point-badge point-a">A</span> Ваш адрес
+                        </label>
+                        <input type="text" id="home-input" class="form-control"
+                               placeholder="Введите свой адрес..." autocomplete="off">
+                        <div id="home-suggestions" class="suggestions-dropdown"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Что ищем</label>
+                        <select id="poi-type" class="form-select">
+                            <option value="продуктовый магазин" data-icon="🛒">🛒 Продуктовый магазин</option>
+                            <option value="супермаркет" data-icon="🏪">🏪 Супермаркет</option>
+                            <option value="аптека" data-icon="💊">💊 Аптека</option>
+                            <option value="школа" data-icon="🏫">🏫 Школа</option>
+                            <option value="поликлиника" data-icon="🏥">🏥 Поликлиника</option>
+                            <option value="парк" data-icon="🌳">🌳 Парк</option>
+                            <option value="спортивная площадка" data-icon="🏃">🏃 Спортплощадка</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Радиус поиска</label>
+                        <select id="search-radius" class="form-select">
+                            <option value="500">500 м</option>
+                            <option value="1000" selected>1 км</option>
+                            <option value="2000">2 км</option>
+                            <option value="3000">3 км</option>
+                        </select>
+                    </div>
+
+                    <button id="search-btn" class="btn btn-primary w-100" disabled>
+                        Найти объекты
+                    </button>
+                </div>
+            </div>
+
+            <!-- POI list (hidden until search) -->
+            <div id="poi-card" class="card shadow-sm mb-3 d-none">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 fw-semibold" id="poi-card-title">Найденные объекты</h6>
+                        <span class="badge bg-secondary" id="poi-count"></span>
+                    </div>
+                    <div id="poi-list"></div>
+                </div>
+            </div>
+
+            <!-- Score card (hidden until route built) -->
+            <div id="score-card" class="card shadow-sm d-none">
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title mb-0">Оценка маршрута</h5>
+                        <button id="back-btn" class="btn btn-sm btn-outline-secondary py-0">← Список</button>
+                    </div>
+
+                    <div id="selected-poi-name" class="text-muted small mb-3"></div>
+
+                    <!-- Score circle -->
+                    <div class="text-center mb-4">
+                        <div class="score-circle mx-auto" id="score-circle">
+                            <span id="total-score">—</span>
+                        </div>
+                        <div class="text-muted small mt-1">из 10 баллов</div>
+                        <div id="score-label" class="mt-2"></div>
+                    </div>
+
+                    <!-- Route stats -->
+                    <div class="row text-center mb-3 g-0 stats-row">
+                        <div class="col-6 border-end">
+                            <div class="text-muted small">Время в пути</div>
+                            <div id="stat-duration" class="fw-semibold fs-5">—</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small">Расстояние</div>
+                            <div id="stat-distance" class="fw-semibold fs-5">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Formula breakdown -->
+                    <div id="score-breakdown" class="mb-3"></div>
+
+                    <!-- Crossing counters -->
+                    <div id="crossing-summary"></div>
+
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Map -->
+        <div class="col-lg-8">
+            <div id="map">
+                <div id="map-loading" class="map-placeholder">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <div class="text-muted">Загрузка карты…</div>
+                </div>
+                <div id="map-error" class="map-placeholder d-none">
+                    <div class="text-danger fs-1 mb-2">⚠</div>
+                    <div class="fw-semibold mb-1">Карта недоступна</div>
+                    <div id="map-error-text" class="text-muted small"></div>
+                </div>
+            </div>
+            <div id="map-hint" class="text-center text-muted small mt-2">
+                Введите свой адрес и выберите тип объектов
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/app.js"></script>
+
+</body>
+</html>

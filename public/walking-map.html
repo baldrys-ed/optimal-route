@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>walking.json — Визуализация маршрута</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        .topbar {
+            background: #1e293b; color: #fff;
+            padding: 10px 20px;
+            display: flex; align-items: center; gap: 16px;
+            height: 52px; flex-shrink: 0;
+        }
+        .topbar .title { font-weight: 700; font-size: 1rem; }
+        .topbar .sub   { color: #94a3b8; font-size: .78rem; }
+        .topbar .badge-stat {
+            background: #334155; color: #e2e8f0;
+            border-radius: 6px; padding: 3px 10px; font-size: .78rem; font-weight: 600;
+        }
+
+        .main-layout {
+            display: flex;
+            height: calc(100vh - 52px);
+        }
+
+        /* ── Карта ── */
+        #map-wrap {
+            flex: 1; position: relative;
+            background: #e2e8f0;
+        }
+        #map { width: 100%; height: 100%; }
+        .map-loader {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #64748b; background: #f1f5f9;
+        }
+
+        /* ── Боковая панель ── */
+        #panel {
+            width: 360px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            border-left: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .panel-section {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+        .panel-label {
+            font-size: .68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .06em; color: #94a3b8; margin-bottom: 8px;
+        }
+
+        /* Статистика */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .stat-box {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 8px 10px; text-align: center;
+        }
+        .stat-val { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+        .stat-key { font-size: .65rem; color: #94a3b8; margin-top: 2px; }
+
+        /* Легенда — стили пути */
+        .legend-row { display: flex; flex-wrap: wrap; gap: 6px; }
+        .leg-item {
+            display: flex; align-items: center; gap: 5px;
+            font-size: .72rem; color: #475569;
+        }
+        .leg-line { width: 24px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+        .leg-dot  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Список манёвров */
+        #maneuver-list { flex: 1; overflow-y: auto; }
+
+        .mnv {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 8px 14px; cursor: pointer;
+            border-bottom: 1px solid #f8fafc;
+            transition: background .1s;
+        }
+        .mnv:hover   { background: #f8fafc; }
+        .mnv.active  { background: #eff6ff; border-left: 3px solid #3b82f6; padding-left: 11px; }
+
+        .mnv-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            flex-shrink: 0; margin-top: 4px;
+        }
+        .mnv-body { flex: 1; min-width: 0; }
+        .mnv-comment { font-size: .82rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mnv-meta    { font-size: .7rem; color: #94a3b8; margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+        .mnv-badge {
+            display: inline-block; padding: 1px 6px;
+            border-radius: 4px; font-size: .62rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .03em;
+        }
+
+        /* Popup-инфо при наведении */
+        #info-box {
+            position: absolute; bottom: 16px; left: 16px; z-index: 10;
+            background: #1e293bdd; color: #fff;
+            border-radius: 10px; padding: 10px 14px;
+            font-size: .8rem; max-width: 280px;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        #info-box .ib-title { font-weight: 700; margin-bottom: 4px; }
+        #info-box .ib-row   { color: #cbd5e1; font-size: .74rem; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div>
+        <div class="title">walking.json</div>
+        <div class="sub">Пешеходный маршрут · 2GIS Routing API v7</div>
+    </div>
+    <div id="hdr-distance" class="badge-stat">—</div>
+    <div id="hdr-duration" class="badge-stat">—</div>
+    <div id="hdr-crossings" class="badge-stat">— пересечений</div>
+</div>
+
+<div class="main-layout">
+
+    <!-- ── Карта ── -->
+    <div id="map-wrap">
+        <div id="map"></div>
+        <div class="map-loader" id="map-loader">
+            <div class="spinner-border text-primary mb-2" role="status" style="width:1.5rem;height:1.5rem"></div>
+            <div>Загружаем карту 2GIS…</div>
+        </div>
+        <div id="info-box">
+            <div class="ib-title" id="ib-title"></div>
+            <div class="ib-row" id="ib-type"></div>
+            <div class="ib-row" id="ib-attr"></div>
+            <div class="ib-row" id="ib-dist"></div>
+        </div>
+    </div>
+
+    <!-- ── Боковая панель ── -->
+    <div id="panel">
+
+        <!-- Статистика -->
+        <div class="panel-section">
+            <div class="panel-label">Статистика маршрута</div>
+            <div class="stats-grid" id="stats-grid"></div>
+        </div>
+
+        <!-- Легенда — цвета линий -->
+        <div class="panel-section">
+            <div class="panel-label">Стили пути</div>
+            <div class="legend-row" id="legend-styles"></div>
+        </div>
+
+        <!-- Легенда — маркеры -->
+        <div class="panel-section">
+            <div class="panel-label">Типы манёвров</div>
+            <div class="legend-row" id="legend-markers"></div>
+        </div>
+
+        <!-- Список манёвров -->
+        <div class="panel-label" style="padding: 8px 14px 0; margin-bottom: 0;">
+            Манёвры <span id="mnv-count" style="color:#3b82f6"></span>
+        </div>
+        <div id="maneuver-list"></div>
+
+    </div>
+</div>
+
+<script>
+const API_KEY = 'bc9d537e-6e92-4751-9017-fe5c28958f30';
+
+// ── Цвета стилей геометрии ──────────────────────────────────────
+const STYLE_COLORS = {
+    normal:       '#3b82f6',
+    crosswalk:    '#f97316',
+    park_path:    '#22c55e',
+    living_zone:  '#a855f7',
+    undergroundway: '#6b7280',
+    archway:      '#b45309',
+};
+const STYLE_LABELS = {
+    normal:       'Тротуар',
+    crosswalk:    'Зебра',
+    park_path:    'Парк',
+    living_zone:  'Жилая зона',
+    undergroundway: 'Подземный переход',
+    archway:      'Арка',
+};
+
+// ── Цвет маркера по типу и атрибуту ────────────────────────────
+function markerColor(type, attribute) {
+    if (type === 'pedestrian_begin') return '#22c55e';
+    if (type === 'pedestrian_end')   return '#3b82f6';
+    if (attribute === 'on_traffic_light') return '#16a34a';
+    if (type === 'pedestrian_road_crossing') {
+        if (attribute === 'onto_crosswalk') return '#f97316';
+        return '#ef4444'; // no marking
+    }
+    if (type === 'pedestrian_crossroad') {
+        if (attribute === 'onto_crosswalk') return '#eab308';
+        return '#94a3b8'; // simple turn
+    }
+    return '#94a3b8';
+}
+
+function markerLabel(type, attribute) {
+    if (type === 'pedestrian_begin') return { text: 'Старт', bg: '#dcfce7', color: '#166534' };
+    if (type === 'pedestrian_end')   return { text: 'Финиш', bg: '#dbeafe', color: '#1e40af' };
+    if (attribute === 'on_traffic_light') return { text: '🚦 Светофор', bg: '#dcfce7', color: '#166534' };
+    if (type === 'pedestrian_road_crossing') {
+        if (attribute === 'onto_crosswalk') return { text: '⚠ Зебра', bg: '#ffedd5', color: '#9a3412' };
+        return { text: '⛔ Без разметки', bg: '#fee2e2', color: '#991b1b' };
+    }
+    if (attribute === 'onto_crosswalk') return { text: '🟡 Зебра', bg: '#fef9c3', color: '#854d0e' };
+    return { text: '↪ Поворот', bg: '#f1f5f9', color: '#475569' };
+}
+
+// ── Парсинг LINESTRING (поддержка 2D и 3D координат) ───────────
+function parseLinestring(wkt) {
+    const m = wkt.match(/LINESTRING\((.+)\)/);
+    if (!m) return [];
+    return m[1].split(',').map(s => {
+        const parts = s.trim().split(' ').map(Number);
+        return [parts[0], parts[1]]; // lon, lat (игнорируем высоту)
+    });
+}
+
+// Первая точка первого сегмента манёвра
+function maneuverCoord(m) {
+    const geom = m.outcoming_path?.geometry;
+    if (!geom || !geom[0]?.selection) return null;
+    const pts = parseLinestring(geom[0].selection);
+    return pts[0] || null;
+}
+
+// ── Карта и объекты ─────────────────────────────────────────────
+let map = null;
+let mapReady = false;
+let polylines = [];
+let markers = [];
+let maneuvers = [];
+let activeManIdx = -1;
+
+function clearMap() {
+    polylines.forEach(p => p.destroy());
+    markers.forEach(m => m.destroy());
+    polylines = []; markers = [];
+}
+
+function initMap() {
+    const loader = document.getElementById('map-loader');
+    try {
+        map = new mapgl.Map('map', { center: [37.62, 55.77], zoom: 11, key: API_KEY });
+        loader.style.display = 'none';
+        mapReady = true;
+        renderMap();
+    } catch(e) {
+        loader.innerHTML = `<div style="color:#ef4444;font-size:2rem">⚠</div>
+            <div style="font-weight:600">Карта не загрузилась</div>
+            <div style="color:#94a3b8;font-size:.8rem;margin-top:4px">${e.message}</div>`;
+    }
+}
+
+function renderMap() {
+    if (!mapReady || !window.ROUTE_DATA) return;
+    clearMap();
+
+    const route = ROUTE_DATA.result[0];
+    const allCoords = [];
+
+    // Начальный пешеходный отрезок
+    const bSel = route.begin_pedestrian_path?.geometry?.selection;
+    if (bSel) {
+        const coords = parseLinestring(bSel);
+        allCoords.push(...coords);
+        if (coords.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: coords, width: 4, color: '#a855f7', opacity: 0.7 }));
+    }
+
+    // Манёвры
+    route.maneuvers.forEach((maneuver, idx) => {
+        const geom = maneuver.outcoming_path?.geometry || [];
+
+        geom.forEach(seg => {
+            const coords = parseLinestring(seg.selection);
+            if (coords.length < 2) return;
+            allCoords.push(...coords);
+            const color = STYLE_COLORS[seg.style] || STYLE_COLORS.normal;
+            const width  = (seg.style === 'crosswalk') ? 6 : 4;
+            polylines.push(new mapgl.Polyline(map, { coordinates: coords, width, color, opacity: 0.85 }));
+        });
+
+        // Маркер
+        const coord = maneuverCoord(maneuver);
+        if (coord) {
+            const color = markerColor(maneuver.type, maneuver.attribute);
+            const marker = new mapgl.Marker(map, { coordinates: coord, color });
+            // Сохраняем индекс для клика по списку
+            marker._mnvIdx = idx;
+            markers.push(marker);
+        }
+    });
+
+    // Конечный пешеходный отрезок
+    const eSel = route.end_pedestrian_path?.geometry?.selection;
+    if (eSel) {
+        const coords = parseLinestring(eSel);
+        allCoords.push(...coords);
+        if (coords.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: coords, width: 4, color: '#a855f7', opacity: 0.7 }));
+    }
+
+    // Подогнать вид
+    if (allCoords.length > 1) {
+        const lons = allCoords.map(c => c[0]);
+        const lats = allCoords.map(c => c[1]);
+        const cx = (Math.min(...lons) + Math.max(...lons)) / 2;
+        const cy = (Math.min(...lats) + Math.max(...lats)) / 2;
+        const span = Math.max(Math.max(...lons)-Math.min(...lons), Math.max(...lats)-Math.min(...lats));
+        map.setCenter([cx, cy]);
+        map.setZoom(span > 0.08 ? 12 : span > 0.04 ? 13 : 14);
+    }
+}
+
+// ── Интерфейс: клик по манёвру ─────────────────────────────────
+function selectManeuver(idx) {
+    activeManIdx = idx;
+    document.querySelectorAll('.mnv').forEach((el, i) => el.classList.toggle('active', i === idx));
+
+    const mnv = maneuvers[idx];
+    const coord = maneuverCoord(mnv);
+    if (coord && mapReady) {
+        map.setCenter(coord);
+        map.setZoom(16);
+    }
+
+    // Info box
+    const box = document.getElementById('info-box');
+    const lbl = markerLabel(mnv.type, mnv.attribute);
+    document.getElementById('ib-title').textContent = mnv.comment || mnv.type;
+    document.getElementById('ib-type').textContent  = `Тип: ${mnv.type}`;
+    document.getElementById('ib-attr').textContent  = `Атрибут: ${mnv.attribute || 'нет'}`;
+    const dist = mnv.outcoming_path?.distance;
+    const dur  = mnv.outcoming_path?.duration;
+    document.getElementById('ib-dist').textContent  = dist ? `Дальше: ${dist} м · ${dur} с` : '';
+    box.style.display = 'block';
+}
+
+// ── Рендер панели ───────────────────────────────────────────────
+function renderPanel() {
+    const route = ROUTE_DATA.result[0];
+    maneuvers = route.maneuvers || [];
+
+    // Хэдер
+    document.getElementById('hdr-distance').textContent =
+        `${route.ui_total_distance.value} ${route.ui_total_distance.unit}`;
+    document.getElementById('hdr-duration').textContent = route.ui_total_duration;
+
+    const roadCrossings = maneuvers.filter(m => m.type === 'pedestrian_road_crossing').length;
+    document.getElementById('hdr-crossings').textContent = `${roadCrossings} пересечений дорог`;
+
+    // Статистика
+    const alt = route.altitudes_info || {};
+    const gainM  = alt.elevation_gain  ? (alt.elevation_gain  / 100).toFixed(0) : '—';
+    const lossM  = alt.elevation_loss  ? (alt.elevation_loss  / 100).toFixed(0) : '—';
+    const angleM = alt.max_road_angle  || '—';
+    const lightCount = maneuvers.filter(m => m.attribute === 'on_traffic_light').length;
+    const crosswalkCount = maneuvers.filter(m => m.attribute === 'onto_crosswalk').length;
+    const unsafeCount = maneuvers.filter(m =>
+        (m.type === 'pedestrian_road_crossing') && (!m.attribute || m.attribute === 'empty')).length;
+
+    document.getElementById('stats-grid').innerHTML = `
+        <div class="stat-box"><div class="stat-val">${route.total_distance} м</div><div class="stat-key">Расстояние</div></div>
+        <div class="stat-box"><div class="stat-val">${Math.round(route.total_duration/60)} мин</div><div class="stat-key">Время</div></div>
+        <div class="stat-box"><div class="stat-val">${maneuvers.length}</div><div class="stat-key">Манёвров</div></div>
+        <div class="stat-box"><div class="stat-val">${roadCrossings}</div><div class="stat-key">Переходов дорог</div></div>
+        <div class="stat-box" style="border-color:#dcfce7"><div class="stat-val" style="color:#16a34a">${lightCount}</div><div class="stat-key">Светофоров</div></div>
+        <div class="stat-box" style="border-color:#ffedd5"><div class="stat-val" style="color:#f97316">${crosswalkCount}</div><div class="stat-key">Зебр</div></div>
+        <div class="stat-box" style="border-color:#fee2e2"><div class="stat-val" style="color:#ef4444">${unsafeCount}</div><div class="stat-key">Без разметки</div></div>
+        <div class="stat-box"><div class="stat-val">↑${gainM} м</div><div class="stat-key">Набор высоты</div></div>
+        <div class="stat-box"><div class="stat-val">${angleM}°</div><div class="stat-key">Макс. уклон</div></div>
+    `;
+
+    // Легенда — стили
+    const styles = Object.entries(STYLE_COLORS).map(([key, color]) => `
+        <div class="leg-item">
+            <div class="leg-line" style="background:${color}"></div>
+            <span>${STYLE_LABELS[key] || key}</span>
+        </div>`).join('');
+    document.getElementById('legend-styles').innerHTML = styles;
+
+    // Легенда — маркеры
+    const markerLegend = [
+        { color: '#22c55e', label: 'Старт / Финиш' },
+        { color: '#16a34a', label: 'Светофор' },
+        { color: '#f97316', label: 'Зебра (переход)' },
+        { color: '#ef4444', label: 'Без разметки (переход)' },
+        { color: '#eab308', label: 'Зебра (поворот)' },
+        { color: '#94a3b8', label: 'Обычный поворот' },
+    ].map(i => `
+        <div class="leg-item">
+            <div class="leg-dot" style="background:${i.color}"></div>
+            <span>${i.label}</span>
+        </div>`).join('');
+    document.getElementById('legend-markers').innerHTML = markerLegend;
+
+    // Счётчик
+    document.getElementById('mnv-count').textContent = `(${maneuvers.length})`;
+
+    // Список
+    document.getElementById('maneuver-list').innerHTML = maneuvers.map((mnv, idx) => {
+        const lbl   = markerLabel(mnv.type, mnv.attribute);
+        const color = markerColor(mnv.type, mnv.attribute);
+        const dist  = mnv.outcoming_path?.distance;
+        const styles = mnv.outcoming_path?.geometry?.map(g => g.style).filter((v, i, a) => a.indexOf(v) === i) || [];
+        const styleChips = styles.map(s =>
+            `<span style="color:${STYLE_COLORS[s]||'#94a3b8'};font-weight:700">● ${STYLE_LABELS[s]||s}</span>`
+        ).join(' ');
+
+        return `<div class="mnv" onclick="selectManeuver(${idx})">
+            <div class="mnv-dot" style="background:${color}"></div>
+            <div class="mnv-body">
+                <div class="mnv-comment">${mnv.comment || mnv.type}</div>
+                <div class="mnv-meta">
+                    <span class="mnv-badge" style="background:${lbl.bg};color:${lbl.color}">${lbl.text}</span>
+                    ${dist ? `<span>${dist} м</span>` : ''}
+                    ${styleChips}
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── Загрузка данных и старт ─────────────────────────────────────
+fetch('walking.json')
+    .then(r => r.json())
+    .then(data => {
+        window.ROUTE_DATA = data;
+        renderPanel();
+        if (mapReady) renderMap();
+    })
+    .catch(err => {
+        console.error('Не удалось загрузить walking.json:', err);
+        document.getElementById('map-loader').innerHTML =
+            `<div style="color:#ef4444;font-size:2rem">⚠</div>
+             <div>Не удалось загрузить walking.json</div>
+             <div style="color:#94a3b8;font-size:.8rem;margin-top:4px">${err.message}</div>`;
+    });
+</script>
+
+<script src="https://mapgl.2gis.com/api/js?key=bc9d537e-6e92-4751-9017-fe5c28958f30"
+    onload="initMap()"
+    onerror="document.getElementById('map-loader').innerHTML='<div style=\'color:#f59e0b;font-size:2rem\'>⚠</div><div>Карта недоступна (нет сети?)</div><div style=\'color:#94a3b8;font-size:.8rem;margin-top:4px\'>Данные на панели всё равно загружены</div>'"
+></script>
+
+</body>
+</html>

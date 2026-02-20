@@ -1,0 +1,1478 @@
+{
+  "message": null,
+  "query": {
+    "filters": ["dirt_road", "ferry", "highway", "ban_stairway"],
+    "locale": "ru",
+    "need_altitudes": true,
+    "output": "detailed",
+    "params": {
+      "pedestrian": {
+        "use_instructions": true
+      }
+    },
+    "points": [
+      {
+        "lat": 55.775364,
+        "lon": 37.582591,
+        "type": "walking"
+      },
+      {
+        "lat": 55.765036,
+        "lon": 37.656625,
+        "type": "walking"
+      }
+    ],
+    "transport": "walking"
+  },
+  "result": [
+    {
+      "algorithm": "кратчайший",
+      "altitudes_info": {
+        "elevation_gain": 7710,
+        "elevation_loss": 7770,
+        "max_altitude": 18250,
+        "max_road_angle": 9,
+        "min_altitude": 15780
+      },
+      "begin_pedestrian_path": {
+        "geometry": {
+          "selection": "LINESTRING(37.582590 55.775363, 37.582738 55.775419)"
+        }
+      },
+      "end_pedestrian_path": {
+        "geometry": {
+          "selection": "LINESTRING(37.656554 55.765081, 37.656625 55.765036)"
+        }
+      },
+      "id": "10207019389071139531",
+      "maneuvers": [
+        {
+          "comment": "start",
+          "icon": "start",
+          "id": "9699378646967848640",
+          "outcoming_path": {
+            "distance": 4,
+            "duration": 3,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1)",
+                "length": 4,
+                "selection": "LINESTRING(37.582738 55.775419 17310, 37.582798 55.775434 17300)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "10 м прямо",
+          "type": "pedestrian_begin"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "6860797766662206838",
+          "outcoming_path": {
+            "distance": 167,
+            "duration": 111,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0, 0, 0, -1, -2, 0, 0, 0)",
+                "length": 171,
+                "selection": "LINESTRING(37.582798 55.775434 17300, 37.582634 55.775643 17280, 37.582535 55.775768 17290, 37.582362 55.775987 17290, 37.582308 55.776117 17290, 37.582292 55.776158 17290, 37.582270 55.776212 17290, 37.582021 55.776526 17220, 37.582011 55.776539 17210, 37.582001 55.776551 17210, 37.581796 55.776810 17220, 37.581812 55.776856 17220)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": -90,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "2759848632956653239",
+          "outcoming_path": {
+            "distance": 149,
+            "duration": 99,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0, 0, 1, 0, 0, 0, 0)",
+                "length": 150,
+                "selection": "LINESTRING(37.581812 55.776856 17220, 37.581834 55.776926 17220, 37.582132 55.777094 17190, 37.582339 55.777211 17200, 37.582482 55.777292 17200, 37.582620 55.777370 17200, 37.583213 55.777710 17330, 37.583226 55.777717 17330, 37.583315 55.777750 17320, 37.583416 55.777767 17320, 37.583501 55.777783 17320)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": 54,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "955913692931592312",
+          "outcoming_path": {
+            "distance": 79,
+            "duration": 53,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 1, 0, 1, 1)",
+                "length": 79,
+                "selection": "LINESTRING(37.583501 55.777783 17320, 37.583621 55.777771 17320, 37.583728 55.777751 17320, 37.584331 55.777475 17470, 37.584448 55.777454 17480, 37.584494 55.777458 17490, 37.584508 55.777409 17500)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "80 м прямо",
+          "turn_angle": 60,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "5731321777756457327",
+          "outcoming_path": {
+            "distance": 9,
+            "duration": 6,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-2, 0)",
+                "length": 9,
+                "selection": "LINESTRING(37.584508 55.777409 17500, 37.584486 55.777362 17460, 37.584536 55.777339 17460)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "10 м прямо",
+          "turn_angle_first": 90,
+          "turn_angle_second": -90,
+          "turn_direction_first": "right",
+          "turn_direction_second": "left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "12443181236702472658",
+          "outcoming_path": {
+            "distance": 114,
+            "duration": 76,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0)",
+                "length": 8,
+                "selection": "LINESTRING(37.584536 55.777339 17460, 37.584644 55.777290 17460)",
+                "style": "crosswalk",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, -4, 0)",
+                "length": 108,
+                "selection": "LINESTRING(37.584644 55.777290 17460, 37.584784 55.777231 17490, 37.584698 55.777159 17480, 37.584809 55.776905 17480, 37.584819 55.776880 17490, 37.584828 55.776864 17490, 37.584834 55.776856 17490, 37.584840 55.776850 17490, 37.584852 55.776841 17490, 37.584876 55.776825 17490, 37.585176 55.776646 17500, 37.585205 55.776631 17500, 37.585241 55.776617 17510, 37.585283 55.776602 17510, 37.585313 55.776595 17510, 37.585339 55.776590 17520, 37.585369 55.776587 17520, 37.585380 55.776588 17520, 37.585389 55.776589 17520, 37.585400 55.776593 17510, 37.585460 55.776563 17510)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "on_traffic_light",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "6913229185516945240",
+          "outcoming_path": {
+            "distance": 295,
+            "duration": 197,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0)",
+                "length": 12,
+                "selection": "LINESTRING(37.585460 55.776563 17510, 37.585606 55.776492 17500)",
+                "style": "crosswalk",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(0, -1, 0, 0, 0)",
+                "length": 285,
+                "selection": "LINESTRING(37.585606 55.776492 17500, 37.585669 55.776455 17500, 37.585555 55.776380 17480, 37.585754 55.776275 17480, 37.587430 55.775293 17560, 37.588535 55.774645 17600)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "300 м прямо",
+          "turn_angle": 90,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "14879468253314714598",
+          "outcoming_path": {
+            "distance": 212,
+            "duration": 141,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0)",
+                "length": 212,
+                "selection": "LINESTRING(37.588535 55.774645 17600, 37.588607 55.774597 17590, 37.590774 55.773328 17700, 37.590788 55.773326 17700, 37.590890 55.773267 17700)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "200 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "6980479169442816526",
+          "outcoming_path": {
+            "distance": 122,
+            "duration": 81,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, -1)",
+                "length": 123,
+                "selection": "LINESTRING(37.590890 55.773267 17700, 37.590996 55.773223 17700, 37.592136 55.772557 17790, 37.592233 55.772500 17790, 37.592262 55.772470 17780)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "12393117214478264634",
+          "outcoming_path": {
+            "distance": 183,
+            "duration": 122,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 0, 1)",
+                "length": 184,
+                "selection": "LINESTRING(37.592262 55.772470 17780, 37.592310 55.772431 17770, 37.594241 55.771299 17700, 37.594293 55.771270 17710)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "200 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "7938050488433498281",
+          "outcoming_path": {
+            "distance": 155,
+            "duration": 103,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0, -1, 2, 2, 0)",
+                "length": 156,
+                "selection": "LINESTRING(37.594293 55.771270 17710, 37.594383 55.771218 17720, 37.594560 55.771114 17720, 37.594847 55.770946 17720, 37.595239 55.770716 17720, 37.595794 55.770391 17620, 37.595992 55.770277 17720, 37.595995 55.770264 17730, 37.596011 55.770251 17730)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "7731639997555964546",
+          "outcoming_path": {
+            "distance": 89,
+            "duration": 59,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0)",
+                "length": 89,
+                "selection": "LINESTRING(37.596011 55.770251 17730, 37.596088 55.770201 17740, 37.596302 55.770061 17740, 37.596805 55.769701 17750, 37.596913 55.769622 17740)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "90 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "11074090617324138189",
+          "outcoming_path": {
+            "distance": 226,
+            "duration": 151,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 1, 3)",
+                "length": 228,
+                "selection": "LINESTRING(37.596913 55.769622 17740, 37.597001 55.769574 17750, 37.597246 55.769439 17720, 37.598335 55.768841 17730, 37.599471 55.768221 17930, 37.599527 55.768190 17980)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "250 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "17648912545882262608",
+          "outcoming_path": {
+            "distance": 118,
+            "duration": 79,
+            "geometry": [
+              {
+                "angles": "LINESTRING(1, 0, 0, -1, -2, 0, 0, 1, 0, 1, -12)",
+                "length": 120,
+                "selection": "LINESTRING(37.599527 55.768190 17980, 37.599607 55.768146 18000, 37.600167 55.767839 18010, 37.600209 55.767818 18010, 37.600266 55.767795 18000, 37.600354 55.767758 17950, 37.600514 55.767669 17930, 37.600539 55.767652 17930, 37.600562 55.767630 17940, 37.600588 55.767609 17940, 37.600843 55.767470 18010, 37.600906 55.767436 17800)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "7230173077901956160",
+          "outcoming_path": {
+            "distance": 156,
+            "duration": 104,
+            "geometry": [
+              {
+                "length": 158,
+                "selection": "LINESTRING(37.600906 55.767436, 37.600955 55.767409, 37.600951 55.767393, 37.600962 55.767382, 37.601486 55.767094, 37.601506 55.767106, 37.601850 55.766917, 37.602633 55.766487, 37.602686 55.766458)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "7376482323294365131",
+          "outcoming_path": {
+            "distance": 78,
+            "duration": 52,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 2, -6, 3)",
+                "length": 80,
+                "selection": "LINESTRING(37.602686 55.766458 17970, 37.602795 55.766399 17940, 37.603396 55.766071 18250, 37.603509 55.766009 18080, 37.603611 55.765952 18150)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "80 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "1110541952860181363",
+          "outcoming_path": {
+            "distance": 33,
+            "duration": 22,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1)",
+                "length": 33,
+                "selection": "LINESTRING(37.603611 55.765952 18150, 37.603987 55.766170 18020)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": -90,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "8243507960615919464",
+          "outcoming_path": {
+            "distance": 70,
+            "duration": 47,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 0, -1)",
+                "length": 71,
+                "selection": "LINESTRING(37.603987 55.766170 18020, 37.604330 55.765981 17910, 37.604512 55.765881 17910, 37.604809 55.765719 17800)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "70 м прямо",
+          "turn_angle": 90,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "8272148929171838643",
+          "outcoming_path": {
+            "distance": 145,
+            "duration": 97,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, -2, 2)",
+                "length": 146,
+                "selection": "LINESTRING(37.604809 55.765719 17800, 37.606463 55.766449 17510, 37.606515 55.766472 17490, 37.606650 55.766531 17550)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": -78,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "5970407802820512635",
+          "outcoming_path": {
+            "distance": 162,
+            "duration": 108,
+            "geometry": [
+              {
+                "angles": "LINESTRING(2, -2, 0, 0, -1, 0, -2, -4, 1, -2)",
+                "length": 166,
+                "selection": "LINESTRING(37.606650 55.766531 17550, 37.606763 55.766553 17600, 37.607040 55.766621 17510, 37.607143 55.766657 17510, 37.607567 55.766800 17500, 37.607642 55.766824 17480, 37.608278 55.767043 17480, 37.608641 55.767162 17310, 37.608748 55.767197 17220, 37.608850 55.767231 17240, 37.608914 55.767169 17200)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": -45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "13467641249833935965",
+          "outcoming_path": {
+            "distance": 298,
+            "duration": 199,
+            "geometry": [
+              {
+                "angles": "LINESTRING(5)",
+                "length": 7,
+                "selection": "LINESTRING(37.608914 55.767169 17200, 37.608974 55.767110 17310)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(-7, 0, 0, 0, 0, -1, -1, -1, 1)",
+                "length": 292,
+                "selection": "LINESTRING(37.608974 55.767110 17310, 37.609228 55.767079 16980, 37.609291 55.767128 16980, 37.610092 55.767392 17020, 37.611247 55.767772 16940, 37.612020 55.768006 16920, 37.612483 55.768145 16840, 37.612646 55.768184 16800, 37.612819 55.768190 16770, 37.613089 55.768133 16820)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "300 м прямо",
+          "turn_angle_first": 90,
+          "turn_angle_second": -90,
+          "turn_direction_first": "right",
+          "turn_direction_second": "left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Держитесь правее",
+          "icon": "crossroad_keep_right",
+          "id": "17020996055302418170",
+          "outcoming_path": {
+            "distance": 32,
+            "duration": 21,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 1)",
+                "length": 33,
+                "selection": "LINESTRING(37.613089 55.768133 16820, 37.613322 55.768084 16810, 37.613469 55.767950 16880)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": 24,
+          "turn_direction": "keep_right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "11238183946676551772",
+          "outcoming_path": {
+            "distance": 18,
+            "duration": 12,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-8, -4, 9)",
+                "length": 19,
+                "selection": "LINESTRING(37.613469 55.767950 16880, 37.613547 55.767895 16690, 37.613591 55.767879 16650, 37.613717 55.767915 16910)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "20 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": -90,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "1478198762515978155",
+          "outcoming_path": {
+            "distance": 278,
+            "duration": 185,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-7, 0, -2, -1, 0, -1, -1, -1, 0, -1, 0)",
+                "length": 280,
+                "selection": "LINESTRING(37.613717 55.767915 16910, 37.613829 55.767929 16760, 37.614695 55.767880 16780, 37.615626 55.767807 16450, 37.615801 55.767787 16420, 37.616180 55.767730 16430, 37.616582 55.767670 16330, 37.616764 55.767642 16280, 37.617857 55.767477 16080, 37.617923 55.767460 16080, 37.617973 55.767444 16070, 37.618088 55.767427 16060)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "300 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "15946151846605453229",
+          "outcoming_path": {
+            "distance": 218,
+            "duration": 145,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, 0, 0, 0, 0, -2)",
+                "length": 219,
+                "selection": "LINESTRING(37.618088 55.767427 16060, 37.618173 55.767408 16060, 37.618311 55.767383 16050, 37.618791 55.767311 16040, 37.620101 55.767114 15930, 37.620906 55.766993 15900, 37.621374 55.766914 15860, 37.621467 55.766896 15820)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "200 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "17057463247682401393",
+          "outcoming_path": {
+            "distance": 22,
+            "duration": 15,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 2)",
+                "length": 23,
+                "selection": "LINESTRING(37.621467 55.766896 15820, 37.621645 55.766864 15780, 37.621819 55.766831 15840)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "20 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "6301794246179566435",
+          "outcoming_path": {
+            "distance": 121,
+            "duration": 81,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 0, 2, -3, 3, 4, 2, 4, 6)",
+                "length": 127,
+                "selection": "LINESTRING(37.621819 55.766831 15840, 37.621909 55.766815 15820, 37.622755 55.766658 15880, 37.622919 55.766628 15950, 37.623083 55.766598 15840, 37.623355 55.766548 16020, 37.623491 55.766523 16130, 37.623584 55.766505 16170, 37.623680 55.766489 16240, 37.623751 55.766484 16330)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "664897464967174363",
+          "outcoming_path": {
+            "distance": 190,
+            "duration": 127,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-4, 3, 1, 3, 8)",
+                "length": 191,
+                "selection": "LINESTRING(37.623751 55.766484 16330, 37.623859 55.766477 16240, 37.624863 55.766413 16780, 37.625616 55.766365 17000, 37.626724 55.766313 17570, 37.626794 55.766313 17680)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "200 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "430771760163018021",
+          "outcoming_path": {
+            "distance": 289,
+            "duration": 193,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 0, -1, 1, 0, 0, 1, 1, 0, 7, 0, 0, 1, 1)",
+                "length": 291,
+                "selection": "LINESTRING(37.626794 55.766313 17680, 37.626894 55.766312 17660, 37.627683 55.766320 17610, 37.627974 55.766323 17570, 37.628521 55.766329 17640, 37.629634 55.766342 17730, 37.630210 55.766348 17780, 37.631135 55.766358 17890, 37.631224 55.766360 17910, 37.631238 55.766356 17910, 37.631242 55.766353 17920, 37.631243 55.766349 17920, 37.631239 55.766340 17920, 37.631219 55.766301 17930, 37.631321 55.766284 17960)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "300 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "13966233030161666013",
+          "outcoming_path": {
+            "distance": 78,
+            "duration": 52,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1)",
+                "length": 3,
+                "selection": "LINESTRING(37.631321 55.766284 17960, 37.631367 55.766277 17950)",
+                "style": "crosswalk",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(-12, 8, 8, 9, 8, 1, 0, 2)",
+                "length": 77,
+                "selection": "LINESTRING(37.631367 55.766277 17950, 37.631462 55.766262 17720, 37.631482 55.766279 17780, 37.631498 55.766287 17810, 37.631515 55.766290 17840, 37.631539 55.766292 17880, 37.631831 55.766282 17960, 37.632415 55.766262 18010, 37.632581 55.766254 18090)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "80 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": -45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "6035563640739467799",
+          "outcoming_path": {
+            "distance": 193,
+            "duration": 129,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-14, 1, -1, 0, 0, 0, -3, 0, 2, 2, 2, 2, 1, 1, 0)",
+                "length": 195,
+                "selection": "LINESTRING(37.632581 55.766254 18090, 37.632675 55.766243 17820, 37.633106 55.766215 17910, 37.633622 55.766197 17800, 37.633837 55.766185 17800, 37.633959 55.766172 17800, 37.634502 55.766114 17830, 37.634593 55.766102 17780, 37.635036 55.766043 17770, 37.635111 55.766033 17800, 37.635233 55.766014 17850, 37.635324 55.765989 17880, 37.635372 55.765970 17900, 37.635411 55.765946 17910, 37.635445 55.765917 17920, 37.635571 55.765879 17910)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "200 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "1024123420641628608",
+          "outcoming_path": {
+            "distance": 132,
+            "duration": 88,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-10, -2, 1, 0, 1, -1, 1, -8, 3, -3)",
+                "length": 136,
+                "selection": "LINESTRING(37.635571 55.765879 17910, 37.635642 55.765857 17750, 37.635804 55.765788 17660, 37.636248 55.765571 17770, 37.636340 55.765513 17780, 37.636410 55.765465 17800, 37.636684 55.765346 17760, 37.636996 55.765210 17800, 37.637049 55.765186 17700, 37.637125 55.765144 17760, 37.637244 55.765107 17680)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "10774931502350085369",
+          "outcoming_path": {
+            "distance": 25,
+            "duration": 17,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, -3, -1, -2, 1)",
+                "length": 27,
+                "selection": "LINESTRING(37.637244 55.765107 17680, 37.637342 55.765077 17680, 37.637425 55.765056 17620, 37.637455 55.765046 17610, 37.637508 55.765018 17580, 37.637592 55.765068 17600)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": -90,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "1333470326835812601",
+          "outcoming_path": {
+            "distance": 49,
+            "duration": 33,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0, 0, -1, -1)",
+                "length": 51,
+                "selection": "LINESTRING(37.637592 55.765068 17600, 37.637660 55.765114 17590, 37.637912 55.765199 17590, 37.638179 55.765273 17560, 37.638286 55.765303 17540)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "50 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "14104230778758300015",
+          "outcoming_path": {
+            "distance": 54,
+            "duration": 36,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, -1, 1, -1)",
+                "length": 55,
+                "selection": "LINESTRING(37.638286 55.765303 17540, 37.638365 55.765358 17510, 37.638278 55.765399 17490, 37.638731 55.765603 17560, 37.638786 55.765628 17540)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "50 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 45,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "keep_right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "16193663482553093473",
+          "outcoming_path": {
+            "distance": 114,
+            "duration": 76,
+            "geometry": [
+              {
+                "angles": "LINESTRING(1, 0, 6)",
+                "length": 115,
+                "selection": "LINESTRING(37.638786 55.765628 17540, 37.638852 55.765661 17550, 37.640180 55.765106 17590, 37.640262 55.765066 17720)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": 90,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "right",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "203183039228841712",
+          "outcoming_path": {
+            "distance": 69,
+            "duration": 46,
+            "geometry": [
+              {
+                "angles": "LINESTRING(3, -1)",
+                "length": 70,
+                "selection": "LINESTRING(37.640262 55.765066 17720, 37.640320 55.765038 17770, 37.641235 55.765324 17650)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "70 м прямо",
+          "turn_angle_first": 0,
+          "turn_angle_second": -90,
+          "turn_direction_first": "straight",
+          "turn_direction_second": "left",
+          "type": "pedestrian_road_crossing"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "14118942886704900135",
+          "outcoming_path": {
+            "distance": 73,
+            "duration": 49,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1)",
+                "length": 7,
+                "selection": "LINESTRING(37.641235 55.765324 17650, 37.641297 55.765268 17620)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(-1, 0, 1, -3, -1, -1, -1, 0, -1, -6)",
+                "length": 67,
+                "selection": "LINESTRING(37.641297 55.765268 17620, 37.641333 55.765232 17610, 37.641960 55.765030 17590, 37.641966 55.765010 17600, 37.641981 55.764993 17580, 37.642006 55.764979 17570, 37.642037 55.764970 17560, 37.642072 55.764967 17550, 37.642106 55.764970 17550, 37.642137 55.764979 17540, 37.642161 55.764993 17500)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "70 м прямо",
+          "turn_angle": 90,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "9656865039294151275",
+          "outcoming_path": {
+            "distance": 34,
+            "duration": 23,
+            "geometry": [
+              {
+                "angles": "LINESTRING(0)",
+                "length": 28,
+                "selection": "LINESTRING(37.642161 55.764993 17500, 37.642565 55.764878 17480)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(6, 7)",
+                "length": 6,
+                "selection": "LINESTRING(37.642565 55.764878 17480, 37.642593 55.764850 17550, 37.642614 55.764828 17610)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": 72,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "6690485589559797167",
+          "outcoming_path": {
+            "distance": 26,
+            "duration": 17,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-2, -4)",
+                "length": 26,
+                "selection": "LINESTRING(37.642614 55.764828 17610, 37.642660 55.764842 17590, 37.642973 55.764946 17330)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": -90,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Держитесь правее",
+          "icon": "crossroad_keep_right",
+          "id": "16488846393117109600",
+          "outcoming_path": {
+            "distance": 29,
+            "duration": 19,
+            "geometry": [
+              {
+                "angles": "LINESTRING(1)",
+                "length": 29,
+                "selection": "LINESTRING(37.642973 55.764946 17330, 37.643436 55.764918 17420)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": 36,
+          "turn_direction": "keep_right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Держитесь правее",
+          "icon": "crossroad_keep_right",
+          "id": "9095021046075488908",
+          "outcoming_path": {
+            "distance": 75,
+            "duration": 50,
+            "geometry": [
+              {
+                "angles": "LINESTRING(1, -2)",
+                "length": 44,
+                "selection": "LINESTRING(37.643436 55.764918 17420, 37.643902 55.764849 17510, 37.644122 55.764816 17430)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(1, 0, -1)",
+                "length": 30,
+                "selection": "LINESTRING(37.644122 55.764816 17430, 37.644189 55.764824 17440, 37.644232 55.764815 17440, 37.644448 55.764638 17390)",
+                "style": "living_zone",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "80 м прямо",
+          "turn_angle": 12,
+          "turn_direction": "keep_right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Держитесь левее",
+          "icon": "crossroad_keep_left",
+          "id": "5542089920403325557",
+          "outcoming_path": {
+            "distance": 107,
+            "duration": 71,
+            "geometry": [
+              {
+                "angles": "LINESTRING(2, 1, 0, 0, -1, -1, 0, 2, 2, 0)",
+                "length": 111,
+                "selection": "LINESTRING(37.644448 55.764638 17390, 37.644670 55.764618 17470, 37.644715 55.764634 17480, 37.644976 55.764731 17500, 37.645143 55.764794 17510, 37.645339 55.764866 17460, 37.645517 55.764933 17410, 37.645746 55.765009 17400, 37.645862 55.765048 17440, 37.645904 55.765059 17460, 37.645985 55.765082 17460)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": -42,
+          "turn_direction": "keep_left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "1638842969577106337",
+          "outcoming_path": {
+            "distance": 134,
+            "duration": 89,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-3, -3, 1, 0, -2, 8)",
+                "length": 135,
+                "selection": "LINESTRING(37.645985 55.765082 17460, 37.646074 55.765108 17400, 37.646104 55.765116 17380, 37.646469 55.765216 17420, 37.647644 55.765476 17420, 37.647888 55.765525 17320, 37.647987 55.765546 17490)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "150 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "12155778021729728281",
+          "outcoming_path": {
+            "distance": 299,
+            "duration": 199,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-2, -1, 0, 0, 0, 0, 0, -1)",
+                "length": 302,
+                "selection": "LINESTRING(37.647987 55.765546 17490, 37.648074 55.765565 17450, 37.648612 55.765687 17380, 37.649098 55.765796 17380, 37.650630 55.766131 17320, 37.651251 55.766267 17320, 37.651658 55.766356 17280, 37.652400 55.766518 17320, 37.652460 55.766479 17300)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "300 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "3304551206802812598",
+          "outcoming_path": {
+            "distance": 123,
+            "duration": 82,
+            "geometry": [
+              {
+                "angles": "LINESTRING(1, -1, 0, -1, 0, 1)",
+                "length": 125,
+                "selection": "LINESTRING(37.652460 55.766479 17300, 37.652525 55.766434 17320, 37.652887 55.766176 17150, 37.653261 55.765916 17190, 37.653397 55.765823 17150, 37.653654 55.765643 17170, 37.653716 55.765601 17180)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": 90,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "15467072652299516867",
+          "outcoming_path": {
+            "distance": 104,
+            "duration": 69,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-1, 0, -1, -1, -4)",
+                "length": 105,
+                "selection": "LINESTRING(37.653716 55.765601 17180, 37.653770 55.765563 17170, 37.654315 55.765184 17110, 37.654590 55.764970 17050, 37.654682 55.764893 17020, 37.654735 55.764850 16940)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "onto_crosswalk",
+          "comment": "Движение прямо",
+          "icon": "crossroad_straight",
+          "id": "8896291537589637243",
+          "outcoming_path": {
+            "distance": 95,
+            "duration": 63,
+            "geometry": [
+              {
+                "angles": "LINESTRING(5, 0, -1)",
+                "length": 70,
+                "selection": "LINESTRING(37.654735 55.764850 16940, 37.654785 55.764815 17020, 37.655412 55.764382 16950, 37.655367 55.764362 16940)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(-1, 0, 0)",
+                "length": 26,
+                "selection": "LINESTRING(37.655367 55.764362 16940, 37.655404 55.764324 16930, 37.655521 55.764234 16920, 37.655607 55.764168 16930)",
+                "style": "park_path",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "100 м прямо",
+          "turn_angle": 0,
+          "turn_direction": "straight",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Крутой поворот налево",
+          "icon": "crossroad_sharply_left",
+          "id": "4200927460251528804",
+          "outcoming_path": {
+            "distance": 48,
+            "duration": 32,
+            "geometry": [
+              {
+                "length": 47,
+                "selection": "LINESTRING(37.655607 55.764168, 37.655657 55.764186, 37.655642 55.764197, 37.655435 55.764339, 37.655448 55.764345, 37.655656 55.764201)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "length": 1,
+                "selection": "LINESTRING(37.655656 55.764201, 37.655676 55.764187)",
+                "style": "undergroundway",
+                "zlevel": "zlevel-negative"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "50 м прямо",
+          "turn_angle": -180,
+          "turn_direction": "sharply_left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "15590440219616818381",
+          "outcoming_path": {
+            "distance": 43,
+            "duration": 29,
+            "geometry": [
+              {
+                "length": 43,
+                "selection": "LINESTRING(37.655676 55.764187, 37.656124 55.764380, 37.656232 55.764426)",
+                "style": "undergroundway",
+                "zlevel": "zlevel-negative"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "40 м прямо",
+          "turn_angle": -90,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот налево",
+          "icon": "crossroad_left",
+          "id": "5333926003124605618",
+          "outcoming_path": {
+            "distance": 29,
+            "duration": 19,
+            "geometry": [
+              {
+                "length": 4,
+                "selection": "LINESTRING(37.656232 55.764426, 37.656191 55.764455)",
+                "style": "undergroundway",
+                "zlevel": "zlevel-negative"
+              },
+              {
+                "length": 25,
+                "selection": "LINESTRING(37.656191 55.764455, 37.656072 55.764537, 37.656086 55.764543, 37.656215 55.764455)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "30 м прямо",
+          "turn_angle": -90,
+          "turn_direction": "left",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Крутой поворот направо",
+          "icon": "crossroad_sharply_right",
+          "id": "15675976530219886283",
+          "outcoming_path": {
+            "distance": 49,
+            "duration": 33,
+            "geometry": [
+              {
+                "length": 50,
+                "selection": "LINESTRING(37.656215 55.764455, 37.656228 55.764445, 37.656260 55.764460, 37.655782 55.764778)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "50 м прямо",
+          "turn_angle": 174,
+          "turn_direction": "sharply_right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "attribute": "empty",
+          "comment": "Поворот направо",
+          "icon": "crossroad_right",
+          "id": "9082966231548059960",
+          "outcoming_path": {
+            "distance": 57,
+            "duration": 38,
+            "geometry": [
+              {
+                "angles": "LINESTRING(-6)",
+                "length": 6,
+                "selection": "LINESTRING(37.655782 55.764778 16950, 37.655866 55.764818 16820)",
+                "style": "living_zone",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(3)",
+                "length": 16,
+                "selection": "LINESTRING(37.655866 55.764818 16820, 37.656064 55.764909 16960)",
+                "style": "archway",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(0, -1)",
+                "length": 17,
+                "selection": "LINESTRING(37.656064 55.764909 16960, 37.656228 55.764957 16970, 37.656303 55.764992 16960)",
+                "style": "living_zone",
+                "zlevel": "zlevel-normal"
+              },
+              {
+                "angles": "LINESTRING(1, 0)",
+                "length": 18,
+                "selection": "LINESTRING(37.656303 55.764992 16960, 37.656543 55.765075 17010, 37.656554 55.765081 17010)",
+                "style": "normal",
+                "zlevel": "zlevel-normal"
+              }
+            ],
+            "names": []
+          },
+          "outcoming_path_comment": "60 м прямо",
+          "turn_angle": 96,
+          "turn_direction": "right",
+          "type": "pedestrian_crossroad"
+        },
+        {
+          "comment": "finish",
+          "icon": "finish",
+          "id": "7639803998504047939",
+          "outcoming_path_comment": "Вы на месте!",
+          "type": "pedestrian_end"
+        }
+      ],
+      "reliability": 0.0,
+      "requested_filters": ["dirt_road", "ferry", "highway", "ban_stairway"],
+      "result_filters": ["dirt_road", "ferry", "highway", "ban_stairway"],
+      "route_id": "moscow-pd-back.m9/pedestrianrouting/1751540871.546339",
+      "total_distance": 6078,
+      "total_duration": 4052,
+      "type": "pedestrianrouting",
+      "ui_total_distance": {
+        "unit": "км",
+        "value": "6.1"
+      },
+      "ui_total_duration": "1 час 7 мин",
+      "waypoints": [
+        {
+          "original_point": {
+            "lat": 55.77541941309216,
+            "lon": 37.5827383882787
+          },
+          "projected_point": {
+            "lat": 55.77541941309216,
+            "lon": 37.5827383882787
+          },
+          "transit": false
+        },
+        {
+          "original_point": {
+            "lat": 55.76508145085716,
+            "lon": 37.65655466197384
+          },
+          "projected_point": {
+            "lat": 55.76508145085716,
+            "lon": 37.65655466197384
+          },
+          "transit": false
+        }
+      ]
+    }
+  ],
+  "status": "OK",
+  "type": "result"
+}
