@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оценка маршрута — RouteScoreService</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        /* ── Топбар ── */
+        .topbar {
+            background: #0f172a; color: #fff;
+            padding: 0 20px;
+            display: flex; align-items: center; gap: 14px;
+            height: 52px; flex-shrink: 0;
+        }
+        .topbar .title { font-weight: 700; font-size: .95rem; white-space: nowrap; }
+        .topbar .sub   { color: #64748b; font-size: .72rem; }
+        .tb-badge {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 6px; padding: 3px 10px;
+            font-size: .75rem; font-weight: 600; color: #e2e8f0;
+            white-space: nowrap;
+        }
+        .tb-score {
+            margin-left: auto;
+            font-size: .9rem; font-weight: 800;
+            padding: 4px 14px; border-radius: 20px;
+            background: #1e293b; border: 2px solid #334155;
+            transition: all .4s;
+        }
+
+        /* ── Основной layout ── */
+        .main-layout { display: flex; height: calc(100vh - 52px); }
+
+        /* ── Панель ── */
+        #panel {
+            width: 380px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            background: #fff; overflow: hidden;
+        }
+        #panel-scroll { flex: 1; overflow-y: auto; }
+
+        .p-section {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .p-label {
+            font-size: .65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: #94a3b8; margin-bottom: 10px;
+        }
+
+        /* ── Большой круг оценки ── */
+        .score-ring {
+            width: 110px; height: 110px; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: 0 auto 8px;
+            border: 6px solid #e2e8f0;
+            transition: border-color .5s;
+        }
+        .score-ring .num  { font-size: 2rem; font-weight: 800; line-height: 1; }
+        .score-ring .denom{ font-size: .72rem; color: #94a3b8; }
+        .score-label { text-align: center; font-size: .8rem; font-weight: 600; color: #475569; }
+
+        /* ── Формула ── */
+        .formula-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 10px;
+        }
+        .formula-block {
+            flex: 1; background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 8px 10px; text-align: center;
+        }
+        .formula-block .fb-val  { font-size: 1.1rem; font-weight: 800; }
+        .formula-block .fb-name { font-size: .62rem; color: #94a3b8; margin-top: 1px; }
+        .formula-block .fb-w    { font-size: .68rem; color: #64748b; font-weight: 600; }
+        .formula-op { font-size: 1.1rem; color: #94a3b8; font-weight: 700; flex-shrink: 0; }
+
+        /* ── Зоны ── */
+        .zone-row { margin-bottom: 8px; }
+        .zone-head {
+            display: flex; justify-content: space-between; align-items: baseline;
+            margin-bottom: 3px;
+        }
+        .zone-name  { font-size: .78rem; font-weight: 600; color: #334155; }
+        .zone-meta  { font-size: .68rem; color: #94a3b8; }
+        .zone-bar-bg {
+            height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden;
+        }
+        .zone-bar { height: 100%; border-radius: 4px; transition: width .6s ease; }
+        .zone-w { font-size: .65rem; color: #94a3b8; margin-top: 2px; text-align: right; }
+
+        /* ── Повороты ── */
+        .turns-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .turn-chip {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 6px 10px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .turn-chip .tc-name { font-size: .72rem; color: #475569; }
+        .turn-chip .tc-cnt  { font-size: 1rem; font-weight: 800; color: #1e293b; }
+
+        /* ── Статы в 3 колонки ── */
+        .mini-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .mini-stat  {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 8px 6px; text-align: center;
+        }
+        .mini-stat .ms-val { font-size: 1rem; font-weight: 800; color: #1e293b; }
+        .mini-stat .ms-key { font-size: .62rem; color: #94a3b8; margin-top: 2px; }
+
+        /* ── Карта ── */
+        #map-wrap { flex: 1; position: relative; background: #e2e8f0; }
+        #map { width: 100%; height: 100%; }
+        .map-loader {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #64748b; background: #f1f5f9; z-index: 2;
+        }
+
+        /* ── Loader overlay ── */
+        #score-loader {
+            position: absolute; inset: 0; z-index: 10;
+            background: #ffffffcc; backdrop-filter: blur(4px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #475569;
+        }
+        #score-loader .sl-text { margin-top: 10px; font-size: .85rem; }
+
+        /* Цвета зон */
+        .c-normal        { background: #3b82f6; }
+        .c-crosswalk     { background: #f97316; }
+        .c-park_path     { background: #22c55e; }
+        .c-living_zone   { background: #a855f7; }
+        .c-undergroundway{ background: #6b7280; }
+        .c-archway       { background: #b45309; }
+    </style>
+</head>
+<body>
+
+<!-- ── Топбар ── -->
+<div class="topbar">
+    <div>
+        <div class="title">Оценка маршрута</div>
+        <div class="sub">RouteScoreService · walking.json</div>
+    </div>
+    <div id="tb-dist" class="tb-badge">—</div>
+    <div id="tb-dur"  class="tb-badge">—</div>
+    <div id="tb-cross" class="tb-badge">— пересечений дорог</div>
+    <div id="tb-score" class="tb-score">— / 10</div>
+</div>
+
+<div class="main-layout">
+
+    <!-- ── Левая панель ── -->
+    <div id="panel">
+
+        <!-- Loader поверх панели -->
+        <div id="score-loader">
+            <div class="spinner-border text-primary" role="status" style="width:1.6rem;height:1.6rem"></div>
+            <div class="sl-text">Загружаем и считаем…</div>
+        </div>
+
+        <div id="panel-scroll">
+
+            <!-- Итоговая оценка -->
+            <div class="p-section">
+                <div class="p-label">Итоговая оценка</div>
+
+                <div id="score-ring" class="score-ring">
+                    <span class="num" id="score-num">—</span>
+                    <span class="denom">/ 10</span>
+                </div>
+                <div id="score-label" class="score-label mb-3">—</div>
+
+                <!-- Формула -->
+                <div class="formula-row">
+                    <div class="formula-block">
+                        <div class="fb-val" id="f-pq">—</div>
+                        <div class="fb-w">× 0.65</div>
+                        <div class="fb-name">Качество покрытия</div>
+                    </div>
+                    <div class="formula-op">+</div>
+                    <div class="formula-block">
+                        <div class="fb-val" id="f-ts">—</div>
+                        <div class="fb-w">× 0.35</div>
+                        <div class="fb-name">Прямолинейность</div>
+                    </div>
+                    <div class="formula-op">=</div>
+                    <div class="formula-block" style="background:#f0f9ff;border-color:#bae6fd">
+                        <div class="fb-val" id="f-total" style="color:#0284c7">—</div>
+                        <div class="fb-w">из 10</div>
+                        <div class="fb-name">Итог</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Разбивка по зонам -->
+            <div class="p-section">
+                <div class="p-label">Покрытие маршрута по типам зон</div>
+                <div id="zones-list"></div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="p-section">
+                <div class="p-label">Параметры маршрута</div>
+                <div class="mini-stats" id="mini-stats"></div>
+            </div>
+
+            <!-- Повороты -->
+            <div class="p-section">
+                <div class="p-label">Повороты</div>
+                <div class="turns-grid" id="turns-grid"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ── Карта ── -->
+    <div id="map-wrap">
+        <div id="map"></div>
+        <div class="map-loader" id="map-loader">
+            <div class="spinner-border text-primary mb-2" role="status" style="width:1.4rem;height:1.4rem"></div>
+            <div>Загружаем карту 2GIS…</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const API_KEY = 'bc9d537e-6e92-4751-9017-fe5c28958f30';
+
+const STYLE_COLORS = {
+    normal:        '#3b82f6',
+    crosswalk:     '#f97316',
+    park_path:     '#22c55e',
+    living_zone:   '#a855f7',
+    undergroundway:'#6b7280',
+    archway:       '#b45309',
+};
+const STYLE_LABELS = {
+    normal:        'Тротуар',
+    crosswalk:     'Пешеходный переход',
+    park_path:     'Парк / бульвар',
+    living_zone:   'Жилая зона',
+    undergroundway:'Подземный переход',
+    archway:       'Арка / проход',
+};
+const TURN_LABELS = {
+    straight:      '→ Прямо',
+    keep_right:    '↗ Правее',
+    keep_left:     '↖ Левее',
+    right:         '↪ Направо',
+    left:          '↩ Налево',
+    sharply_right: '⤴ Резко направо',
+    sharply_left:  '⤵ Резко налево',
+};
+
+function scoreColor(s) {
+    if (s >= 8)  return { ring: '#22c55e', text: '#15803d' };
+    if (s >= 6.5)return { ring: '#84cc16', text: '#4d7c0f' };
+    if (s >= 5)  return { ring: '#f59e0b', text: '#b45309' };
+    if (s >= 3.5)return { ring: '#f97316', text: '#c2410c' };
+    return               { ring: '#ef4444', text: '#b91c1c' };
+}
+function scoreLabel(s) {
+    if (s >= 8)  return 'Отлично — комфортный маршрут';
+    if (s >= 6.5)return 'Хорошо — преимущественно комфортный';
+    if (s >= 5)  return 'Умеренно — есть проблемные участки';
+    if (s >= 3.5)return 'Неудобно — много неприятных зон';
+    return               'Плохо — маршрут некомфортный';
+}
+
+// ── Карта ──────────────────────────────────────────────────────
+let map = null, mapReady = false;
+let polylines = [], markers = [];
+
+function parseLinestring(wkt) {
+    const m = wkt.match(/LINESTRING\((.+)\)/);
+    if (!m) return [];
+    return m[1].split(',').map(s => {
+        const p = s.trim().split(' ').map(Number);
+        return [p[0], p[1]];
+    });
+}
+
+function initMap() {
+    try {
+        map = new mapgl.Map('map', { center: [37.62, 55.77], zoom: 11, key: API_KEY });
+        document.getElementById('map-loader').style.display = 'none';
+        mapReady = true;
+        if (window.ROUTE_DATA) renderMap();
+    } catch(e) {
+        document.getElementById('map-loader').innerHTML =
+            `<div style="color:#f59e0b;font-size:2rem">⚠</div>
+             <div style="font-weight:600">Карта не загрузилась</div>
+             <div style="color:#94a3b8;font-size:.8rem;margin-top:4px">${e.message}</div>`;
+    }
+}
+
+function renderMap() {
+    if (!mapReady || !window.ROUTE_DATA) return;
+    polylines.forEach(p => p.destroy());
+    markers.forEach(m => m.destroy());
+    polylines = []; markers = [];
+
+    const route = window.ROUTE_DATA.result[0];
+    const allCoords = [];
+
+    // begin/end pedestrian paths
+    [route.begin_pedestrian_path, route.end_pedestrian_path].forEach(p => {
+        if (!p?.geometry?.selection) return;
+        const c = parseLinestring(p.geometry.selection);
+        allCoords.push(...c);
+        if (c.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: c, width: 4, color: '#a855f7', opacity: 0.7 }));
+    });
+
+    // манёвры
+    route.maneuvers.forEach(mnv => {
+        (mnv.outcoming_path?.geometry || []).forEach(seg => {
+            const c = parseLinestring(seg.selection);
+            if (c.length < 2) return;
+            allCoords.push(...c);
+            const color = STYLE_COLORS[seg.style] || STYLE_COLORS.normal;
+            const width = seg.style === 'crosswalk' ? 7 : 4;
+            polylines.push(new mapgl.Polyline(map, { coordinates: c, width, color, opacity: 0.9 }));
+        });
+
+        // маркер только на start/finish и пересечениях дорог
+        const t = mnv.type;
+        if (t === 'pedestrian_begin' || t === 'pedestrian_end' || t === 'pedestrian_road_crossing') {
+            const geom = mnv.outcoming_path?.geometry;
+            if (!geom?.[0]?.selection) return;
+            const pts = parseLinestring(geom[0].selection);
+            if (!pts[0]) return;
+            const color = t === 'pedestrian_begin' ? '#22c55e'
+                        : t === 'pedestrian_end'   ? '#3b82f6'
+                        : '#f97316';
+            markers.push(new mapgl.Marker(map, { coordinates: pts[0], color }));
+        }
+    });
+
+    // Подогнать вид
+    if (allCoords.length > 1) {
+        const lons = allCoords.map(c => c[0]);
+        const lats = allCoords.map(c => c[1]);
+        const span = Math.max(Math.max(...lons)-Math.min(...lons), Math.max(...lats)-Math.min(...lats));
+        map.setCenter([(Math.min(...lons)+Math.max(...lons))/2, (Math.min(...lats)+Math.max(...lats))/2]);
+        map.setZoom(span > 0.08 ? 12 : span > 0.04 ? 13 : 14);
+    }
+}
+
+// ── Панель оценки ──────────────────────────────────────────────
+function renderScore(data) {
+    const { score, path_quality, turn_simplicity, breakdown } = data;
+    const col = scoreColor(score);
+
+    // Топбар
+    document.getElementById('tb-dist').textContent =
+        (breakdown.total_distance_m / 1000).toFixed(1) + ' км';
+    document.getElementById('tb-dur').textContent =
+        breakdown.total_duration_min + ' мин';
+    document.getElementById('tb-cross').textContent =
+        breakdown.road_crossings + ' пересечений дорог';
+    const tbScore = document.getElementById('tb-score');
+    tbScore.textContent = score + ' / 10';
+    tbScore.style.background = col.ring + '22';
+    tbScore.style.borderColor = col.ring;
+    tbScore.style.color = col.text;
+
+    // Кольцо оценки
+    const ring = document.getElementById('score-ring');
+    ring.style.borderColor = col.ring;
+    document.getElementById('score-num').textContent = score;
+    document.getElementById('score-num').style.color = col.text;
+    document.getElementById('score-label').textContent = scoreLabel(score);
+    document.getElementById('score-label').style.color = col.text;
+
+    // Формула
+    document.getElementById('f-pq').textContent    = path_quality;
+    document.getElementById('f-ts').textContent    = turn_simplicity;
+    document.getElementById('f-total').textContent = score;
+
+    // Зоны
+    const totalM = breakdown.total_distance_m;
+    const zonesEl = document.getElementById('zones-list');
+    zonesEl.innerHTML = Object.entries(breakdown.zones).map(([style, z]) => `
+        <div class="zone-row">
+            <div class="zone-head">
+                <span class="zone-name">${z.label}</span>
+                <span class="zone-meta">${z.meters} м · ${z.percent}%</span>
+            </div>
+            <div class="zone-bar-bg">
+                <div class="zone-bar c-${style}" style="width:${z.percent}%"></div>
+            </div>
+            <div class="zone-w">комфорт ${z.weight}</div>
+        </div>
+    `).join('');
+
+    // Мини-статы
+    document.getElementById('mini-stats').innerHTML = `
+        <div class="mini-stat">
+            <div class="ms-val">${(totalM/1000).toFixed(1)} км</div>
+            <div class="ms-key">Расстояние</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.total_duration_min} мин</div>
+            <div class="ms-key">Время</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.road_crossings}</div>
+            <div class="ms-key">Переходов дорог</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.turn_count}</div>
+            <div class="ms-key">Поворотов</div>
+        </div>
+        <div class="mini-stat" style="${breakdown.sharp_turns > 0 ? 'border-color:#fca5a5' : ''}">
+            <div class="ms-val" style="${breakdown.sharp_turns > 0 ? 'color:#dc2626' : ''}">${breakdown.sharp_turns}</div>
+            <div class="ms-key">Резких (≥120°)</div>
+        </div>
+        <div class="mini-stat" style="background:#f0fdf4;border-color:#bbf7d0">
+            <div class="ms-val" style="color:#16a34a">${breakdown.zones['park_path']?.percent ?? 0}%</div>
+            <div class="ms-key">По паркам</div>
+        </div>
+    `;
+
+    // Повороты
+    document.getElementById('turns-grid').innerHTML =
+        Object.entries(breakdown.turns).map(([dir, cnt]) => `
+            <div class="turn-chip">
+                <span class="tc-name">${TURN_LABELS[dir] || dir}</span>
+                <span class="tc-cnt">${cnt}</span>
+            </div>
+        `).join('');
+}
+
+// ── Загрузка данных ────────────────────────────────────────────
+fetch('walking.json')
+    .then(r => r.json())
+    .then(data => {
+        window.ROUTE_DATA = data;
+        if (mapReady) renderMap();
+
+        // Запрос к API
+        return fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ route: data.result[0] }),
+        });
+    })
+    .then(r => r.json())
+    .then(scoreData => {
+        document.getElementById('score-loader').style.display = 'none';
+        renderScore(scoreData);
+    })
+    .catch(err => {
+        document.getElementById('score-loader').innerHTML =
+            `<div style="color:#ef4444;font-size:2rem;margin-bottom:8px">⚠</div>
+             <div style="font-weight:600;color:#1e293b">Ошибка загрузки</div>
+             <div style="color:#94a3b8;font-size:.78rem;margin-top:4px;text-align:center;padding:0 20px">${err.message}</div>`;
+    });
+</script>
+
+<script
+    src="https://mapgl.2gis.com/api/js?key=bc9d537e-6e92-4751-9017-fe5c28958f30"
+    onload="initMap()"
+    onerror="document.getElementById('map-loader').innerHTML='<div style=\'color:#f59e0b;font-size:2rem\'>⚠</div><div>Карта недоступна</div>'"
+></script>
+
+</body>
+</html>
