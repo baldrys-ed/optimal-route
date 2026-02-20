@@ -2,22 +2,23 @@
 
 namespace App\Controller;
 
-use App\Service\OpenAiService;
+use App\Service\RouteScoreService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * AI-оценка маршрута через ChatGPT.
+ * Оценка маршрута по данным 2GIS Routing API.
  *
  * POST /api/analyze
- * Body: { duration_min, distance_m, maneuvers: [{type, comment, distance}] }
+ * Body: result[0] из ответа 2GIS (поле route)
+ *   { "route": { "maneuvers": [...], "total_distance": 6078, "total_duration": 4052, ... } }
  */
 #[Route('/api/analyze', methods: ['POST'])]
 class AnalyzeController extends AbstractController
 {
-    public function __construct(private readonly OpenAiService $openai) {}
+    public function __construct(private readonly RouteScoreService $scorer) {}
 
     #[Route('')]
     public function __invoke(Request $request): JsonResponse
@@ -28,15 +29,14 @@ class AnalyzeController extends AbstractController
             return $this->json(['error' => 'Invalid JSON'], 400);
         }
 
-        $result = $this->openai->scoreRoute(
-            durationMin: (int)   ($input['duration_min'] ?? 0),
-            distanceM:   (int)   ($input['distance_m']   ?? 0),
-            maneuvers:   (array) ($input['maneuvers']    ?? []),
-        );
+        $route = $input['route'] ?? null;
 
-        return $this->json([
-            'score' => $result['score'],
-            'html'  => nl2br(htmlspecialchars($result['summary'], ENT_QUOTES, 'UTF-8')),
-        ]);
+        if (!$route || empty($route['maneuvers'])) {
+            return $this->json(['error' => 'route.maneuvers required'], 400);
+        }
+
+        $result = $this->scorer->score($route);
+
+        return $this->json($result);
     }
 }
