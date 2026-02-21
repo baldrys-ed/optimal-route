@@ -103,16 +103,22 @@ class RouteScoreService
         arsort($styleMeters);
         $zones = [];
         foreach ($styleMeters as $style => $meters) {
+            $weight = self::STYLE_WEIGHTS[$style] ?? 0.5;
             $zones[$style] = [
-                'label'   => self::STYLE_LABELS[$style] ?? $style,
-                'meters'  => (int) round($meters),
-                'percent' => $totalMeters > 0 ? (int) round($meters / $totalMeters * 100) : 0,
-                'weight'  => self::STYLE_WEIGHTS[$style] ?? 0.5,
+                'label'        => self::STYLE_LABELS[$style] ?? $style,
+                'meters'       => (int) round($meters),
+                'percent'      => $totalMeters > 0 ? (int) round($meters / $totalMeters * 100) : 0,
+                'weight'       => $weight,
+                'contribution' => round($meters * $weight),  // вклад в взвешенную сумму
             ];
         }
 
         // ── Разбивка по поворотам ─────────────────────────────────────
         arsort($turnDirs);
+
+        $avgAngle = count($turnAngles) > 0
+            ? round(array_sum($turnAngles) / count($turnAngles), 1)
+            : 0.0;
 
         return [
             'score'          => $score,
@@ -126,6 +132,9 @@ class RouteScoreService
                 'turns'              => $turnDirs,
                 'turn_count'         => count($turnAngles),
                 'sharp_turns'        => count(array_filter($turnAngles, fn($a) => $a >= 120)),
+                'avg_turn_angle'     => $avgAngle,
+                'weighted_sum'       => (int) round($weightedSum),
+                'total_meters'       => (int) round($totalMeters),
             ],
         ];
     }

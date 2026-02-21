@@ -390,34 +390,71 @@ function displayScore(data) {
     document.getElementById('stat-distance').textContent =
         distM >= 1000 ? `${(distM / 1000).toFixed(1)} км` : `${distM} м`;
 
-    // Формула + зоны
-    const zonesHtml = Object.entries(breakdown.zones).map(([style, z]) => `
-        <div style="margin-bottom:7px">
-            <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px">
-                <span style="font-weight:600;color:#334155">${z.label}</span>
-                <span style="color:#94a3b8">${z.meters} м · ${z.percent}%</span>
-            </div>
-            <div style="height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden">
-                <div style="height:100%;width:${z.percent}%;background:${STYLE_COLORS[style] || '#3b82f6'};border-radius:4px"></div>
-            </div>
-        </div>`).join('');
+    // ── Блок 1: Качество покрытия ──
+    const pqContrib  = (path_quality * 0.65).toFixed(3);
+    const zonesRows  = Object.entries(breakdown.zones).map(([style, z]) => `
+        <tr>
+            <td style="padding:3px 0">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+                      background:${STYLE_COLORS[style]||'#94a3b8'};margin-right:5px;vertical-align:middle"></span>
+                ${z.label}
+            </td>
+            <td style="text-align:right;color:#64748b">${z.meters} м</td>
+            <td style="text-align:center;color:#64748b">×</td>
+            <td style="text-align:center;font-weight:600">${z.weight}</td>
+            <td style="text-align:right;color:#64748b">=</td>
+            <td style="text-align:right;font-weight:600;color:#334155">${z.contribution}</td>
+        </tr>`).join('');
+
+    // ── Блок 2: Прямолинейность ──
+    const tsContrib   = (turn_simplicity * 0.35).toFixed(3);
+    const avgAngle    = breakdown.avg_turn_angle;
+    const turnCount   = breakdown.turn_count;
+    const tsFormula   = turnCount > 0
+        ? `1 − ${avgAngle}° / 180° = <strong>${turn_simplicity}</strong>`
+        : `Поворотов нет → <strong>1.0</strong>`;
 
     document.getElementById('score-breakdown').innerHTML = `
-        <div class="formula-box mb-3" style="font-size:.8rem">
-            <code>${path_quality} × 0.65 &nbsp;+&nbsp; ${turn_simplicity} × 0.35 &nbsp;=&nbsp; <strong>${score}</strong> / 10</code>
-        </div>
-        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:8px">
-            Покрытие маршрута
-        </div>
-        ${zonesHtml}`;
 
-    // Итоговая статистика
-    const turns = breakdown.turns || {};
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:6px">
+            1. Качество покрытия × 0.65
+        </div>
+        <table style="width:100%;font-size:.76rem;border-collapse:collapse;margin-bottom:4px">
+            ${zonesRows}
+            <tr style="border-top:1px solid #e2e8f0">
+                <td colspan="5" style="padding-top:4px;color:#64748b">Σ = ${breakdown.weighted_sum} / ${breakdown.total_meters} м</td>
+                <td style="padding-top:4px;text-align:right;font-weight:700;color:#0284c7">= ${path_quality}</td>
+            </tr>
+        </table>
+        <div style="font-size:.75rem;color:#64748b;margin-bottom:12px;padding:5px 8px;background:#f0f9ff;border-radius:6px">
+            ${path_quality} × 0.65 = <strong>${pqContrib}</strong>
+        </div>
+
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:6px">
+            2. Прямолинейность × 0.35
+        </div>
+        <div style="font-size:.76rem;color:#334155;margin-bottom:4px">
+            ${turnCount} поворотов, средний угол ${avgAngle}°
+        </div>
+        <div style="font-size:.75rem;color:#64748b;margin-bottom:12px;padding:5px 8px;background:#f0fdf4;border-radius:6px">
+            ${tsFormula} × 0.35 = <strong>${tsContrib}</strong>
+        </div>
+
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:6px">
+            Итог
+        </div>
+        <div class="formula-box" style="font-size:.8rem">
+            <code>${pqContrib} + ${tsContrib} = <strong>${score} / 10</strong></code>
+        </div>`;
+
+    // ── Итоговая статистика ──
+    const turns      = breakdown.turns || {};
     const sharpCount = (turns['sharply_left'] || 0) + (turns['sharply_right'] || 0);
     document.getElementById('crossing-summary').innerHTML = `
-        <div class="d-flex flex-wrap gap-2 mt-1">
-            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle px-2 py-1">
-                Переходов дорог: <strong>${breakdown.road_crossings}</strong>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle px-2 py-1"
+                  title="Манёвры типа pedestrian_road_crossing — моменты когда маршрут пересекает проезжую часть">
+                Пересечений дороги: <strong>${breakdown.road_crossings}</strong>
             </span>
             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1">
                 Поворотов: <strong>${breakdown.turn_count}</strong>
