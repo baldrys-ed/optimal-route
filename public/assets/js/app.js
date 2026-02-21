@@ -451,9 +451,14 @@ function displayScore(data) {
                 <span style="color:#64748b">${c.count} шт × ${c.safety} = <strong>${(c.count * c.safety).toFixed(1)}</strong></span>
             </div>`).join('');
 
-    const csFormula = breakdown.road_crossings === 0
+    const n = breakdown.road_crossings;
+    const avgSafety = n > 0
+        ? (breakdown.crossing_detail || []).reduce((s, c) => s + c.count * c.safety, 0) / n
+        : 1.0;
+    const penalty = n > 0 ? Math.exp(-0.08 * n) : 1.0;
+    const csFormula = n === 0
         ? `Нет переходов → <strong>1.0</strong>`
-        : `Σ / ${breakdown.road_crossings} = <strong>${crossing_safety}</strong>`;
+        : `avg ${avgSafety.toFixed(3)} × exp(−0.08×${n}) = ${penalty.toFixed(3)} → <strong>${crossing_safety}</strong>`;
 
     // ── Блок 3: Прямолинейность × 0.15 ──
     const tsContrib = (turn_simplicity * 0.15).toFixed(3);

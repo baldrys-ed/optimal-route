@@ -579,9 +579,14 @@ function renderScorePanel(detail) {
             </div>`;
         }).join('');
 
-    const csFormula = breakdown.road_crossings === 0
+    const n = breakdown.road_crossings;
+    const avgSafety = n > 0
+        ? (breakdown.crossing_detail || []).reduce((s, c) => s + c.count * c.safety, 0) / n
+        : 1.0;
+    const penalty = n > 0 ? Math.exp(-0.08 * n) : 1.0;
+    const csFormula = n === 0
         ? `Нет переходов → <strong>1.0</strong>`
-        : `Σ / ${breakdown.road_crossings} = <strong>${crossing_safety}</strong>`;
+        : `avg ${avgSafety.toFixed(3)} × exp(−0.08×${n}) = ${penalty.toFixed(3)} → <strong>${crossing_safety}</strong>`;
 
     const tsFormula = breakdown.turn_count > 0
         ? `1 − ${breakdown.avg_turn_angle}° / 180° = <strong>${turn_simplicity}</strong>`
