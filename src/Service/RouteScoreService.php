@@ -119,7 +119,7 @@ class RouteScoreService
                 $safetySum += self::CROSSING_SAFETY[$c['attr']] ?? 0.2;
             }
             $avgSafety       = $safetySum / $crossingCount;
-            $quantityPenalty = exp(-0.08 * $crossingCount);
+            $quantityPenalty = exp(-0.05 * $crossingCount);
             $crossingSafety  = $avgSafety * $quantityPenalty;
         }
 

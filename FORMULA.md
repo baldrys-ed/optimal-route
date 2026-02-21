@@ -77,7 +77,7 @@ path_quality = (800×0.5 + 150×1.0 + 50×0.1) / 1000
 
 ```
 avg_safety       = Σ(safety_score) / кол-во переходов
-quantity_penalty = exp(−0.08 × кол-во переходов)
+quantity_penalty = exp(−0.05 × кол-во переходов)
 crossing_safety  = avg_safety × quantity_penalty
 ```
 
@@ -100,12 +100,12 @@ crossing_safety  = avg_safety × quantity_penalty
 | Переходов | `quantity_penalty` | все зебры → `crossing_safety` |
 |-----------|--------------------|-------------------------------|
 | 0         | — (нет)            | **1.000**                     |
-| 1         | 0.923              | 0.554                         |
-| 2         | 0.852              | 0.511                         |
-| 3         | 0.787              | 0.472                         |
-| 6         | 0.619              | 0.371                         |
-| 10        | 0.449              | 0.270                         |
-| 14        | 0.325              | 0.195                         |
+| 1         | 0.951              | 0.571                         |
+| 2         | 0.905              | 0.543                         |
+| 3         | 0.861              | 0.517                         |
+| 6         | 0.741              | 0.444                         |
+| 10        | 0.607              | 0.364                         |
+| 14        | 0.497              | 0.298                         |
 
 ### Пример
 
@@ -113,16 +113,16 @@ crossing_safety  = avg_safety × quantity_penalty
 
 ```
 avg_safety       = (0.6 × 6) / 6     = 0.600
-quantity_penalty = exp(−0.08 × 6)    = 0.619
-crossing_safety  = 0.600 × 0.619     = 0.371
+quantity_penalty = exp(−0.05 × 6)    = 0.741
+crossing_safety  = 0.600 × 0.741     = 0.444
 ```
 
 3 перехода: зебра + зебра + без разметки:
 
 ```
 avg_safety       = (0.6 + 0.6 + 0.2) / 3 = 0.467
-quantity_penalty = exp(−0.08 × 3)         = 0.787
-crossing_safety  = 0.467 × 0.787          = 0.367
+quantity_penalty = exp(−0.05 × 3)         = 0.861
+crossing_safety  = 0.467 × 0.861          = 0.402
 ```
 
 ---
