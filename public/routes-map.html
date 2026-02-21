@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сохранённые маршруты</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body { height: 100%; margin: 0; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        /* ── Топбар ── */
+        .topbar {
+            background: #0f172a; color: #fff;
+            padding: 0 20px;
+            display: flex; align-items: center; gap: 14px;
+            height: 52px; flex-shrink: 0;
+        }
+        .topbar .title { font-weight: 700; font-size: .95rem; }
+        .topbar .sub   { color: #64748b; font-size: .72rem; }
+        .tb-badge {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 6px; padding: 3px 10px;
+            font-size: .75rem; font-weight: 600; color: #e2e8f0;
+        }
+
+        /* ── Layout ── */
+        .main-layout { display: flex; height: calc(100vh - 52px); }
+
+        /* ── Левая панель ── */
+        #panel {
+            width: 360px; flex-shrink: 0;
+            display: flex; flex-direction: column;
+            border-right: 1px solid #e2e8f0;
+            background: #fff; overflow: hidden;
+            position: relative;
+        }
+
+        /* Лоадер поверх панели */
+        #route-loader {
+            position: absolute; inset: 0; z-index: 10;
+            background: rgba(255,255,255,.88); backdrop-filter: blur(3px);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #475569;
+        }
+
+        /* Шапка с кнопкой «назад» */
+        #panel-header {
+            padding: 8px 14px; border-bottom: 1px solid #f1f5f9;
+            display: none; flex-shrink: 0;
+        }
+
+        #panel-scroll { flex: 1; overflow-y: auto; }
+        #panel-scroll::-webkit-scrollbar { width: 4px; }
+        #panel-scroll::-webkit-scrollbar-track { background: transparent; }
+        #panel-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+
+        /* ── Элементы списка маршрутов ── */
+        .route-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background .15s;
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .route-item:hover  { background: #f8fafc; }
+        .route-item.active { background: #eff6ff; padding-left: 13px; border-left: 3px solid #3b82f6; }
+
+        .route-badge {
+            width: 46px; height: 46px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .88rem; font-weight: 800; flex-shrink: 0; border: 3px solid;
+        }
+        .route-info   { flex: 1; min-width: 0; }
+        .route-dist   { font-size: .88rem; font-weight: 600; color: #334155; }
+        .route-meta   { font-size: .71rem; color: #94a3b8; margin-top: 1px; }
+        .route-detail { font-size: .68rem; color: #94a3b8; margin-top: 1px; }
+
+        /* Миниатюрная полоска зон */
+        .zone-mini-bar {
+            height: 5px; background: #f1f5f9; border-radius: 3px;
+            overflow: hidden; display: flex; margin-top: 6px;
+        }
+        .zone-mini-seg { height: 100%; transition: width .4s; }
+
+        /* ── Секции панели оценки ── */
+        .p-section { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; }
+        .p-label {
+            font-size: .62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .07em; color: #94a3b8; margin-bottom: 8px;
+        }
+
+        /* Кольцо оценки */
+        .score-ring {
+            width: 88px; height: 88px; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin: 0 auto 6px; border: 5px solid #e2e8f0;
+        }
+        .score-ring .num   { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+        .score-ring .denom { font-size: .65rem; color: #94a3b8; }
+        .score-label-text  { text-align: center; font-size: .78rem; font-weight: 600; }
+
+        /* Мини-статы */
+        .mini-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; }
+        .mini-stat {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 8px; padding: 6px 4px; text-align: center;
+        }
+        .mini-stat .ms-val { font-size: .88rem; font-weight: 800; color: #1e293b; }
+        .mini-stat .ms-key { font-size: .58rem; color: #94a3b8; margin-top: 1px; }
+
+        /* Зоны */
+        .zone-row { margin-bottom: 8px; }
+        .zone-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+        .zone-name { font-size: .75rem; font-weight: 600; color: #334155; }
+        .zone-meta { font-size: .65rem; color: #94a3b8; }
+        .zone-bar-bg { height: 7px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .zone-bar    { height: 100%; border-radius: 4px; }
+        .zone-w      { font-size: .62rem; color: #94a3b8; margin-top: 1px; text-align: right; }
+
+        /* Блок формулы */
+        .formula-box {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-radius: 6px; padding: 7px 10px; font-size: .78rem;
+        }
+
+        /* Цвета по стилям (для zone-bar и zone-mini-seg) */
+        .c-normal         { background: #3b82f6; }
+        .c-crosswalk      { background: #f97316; }
+        .c-park_path      { background: #22c55e; }
+        .c-living_zone    { background: #a855f7; }
+        .c-undergroundway { background: #6b7280; }
+        .c-archway        { background: #b45309; }
+        .c-stairway       { background: #dc2626; }
+
+        /* ── Карта ── */
+        #map-wrap { flex: 1; position: relative; background: #e2e8f0; }
+        #map { width: 100%; height: 100%; }
+        .map-loader {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: #64748b; background: #f1f5f9; z-index: 2;
+        }
+
+        /* Легенда */
+        #map-legend {
+            position: absolute; bottom: 12px; left: 12px; z-index: 5;
+            background: rgba(255,255,255,.92); border-radius: 8px;
+            padding: 8px 12px; font-size: .72rem;
+            border: 1px solid #e2e8f0; backdrop-filter: blur(4px);
+            display: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+        .legend-item:last-child { margin-bottom: 0; }
+        .legend-dot { width: 14px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+
+        /* Пустое состояние */
+        .empty-state { padding: 48px 20px; text-align: center; color: #94a3b8; }
+        .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+<!-- ── Топбар ── -->
+<div class="topbar">
+    <div>
+        <div class="title">Сохранённые маршруты</div>
+        <div class="sub" id="topbar-sub">Загружаем…</div>
+    </div>
+    <span id="tb-selected" class="tb-badge" style="margin-left:auto;display:none"></span>
+    <a href="/" style="color:#64748b;font-size:.78rem;text-decoration:none;margin-left:auto">← Главная</a>
+</div>
+
+<div class="main-layout">
+
+    <!-- ── Левая панель ── -->
+    <div id="panel">
+
+        <!-- Оверлей загрузки маршрута -->
+        <div id="route-loader">
+            <div class="spinner-border text-primary mb-2" style="width:1.5rem;height:1.5rem" role="status"></div>
+            <div style="font-size:.82rem">Загружаем маршрут…</div>
+        </div>
+
+        <!-- Кнопка «назад» (показывается в детальном виде) -->
+        <div id="panel-header">
+            <button class="btn btn-sm btn-outline-secondary w-100" onclick="showList()">← Все маршруты</button>
+        </div>
+
+        <div id="panel-scroll">
+
+            <!-- Список маршрутов -->
+            <div id="routes-list"></div>
+
+            <!-- Детальная оценка (скрыта по умолчанию) -->
+            <div id="score-panel" style="display:none">
+
+                <!-- Итоговая оценка + мини-статы -->
+                <div class="p-section">
+                    <div class="p-label">Итоговая оценка</div>
+                    <div id="score-ring" class="score-ring">
+                        <span class="num" id="score-num">—</span>
+                        <span class="denom">/ 10</span>
+                    </div>
+                    <div id="score-label" class="score-label-text mb-1">—</div>
+                    <div class="mini-stats" id="mini-stats"></div>
+                </div>
+
+                <!-- Расчёт по формуле -->
+                <div class="p-section">
+                    <div class="p-label">Расчёт оценки</div>
+                    <div id="score-breakdown"></div>
+                </div>
+
+                <!-- Покрытие по типам -->
+                <div class="p-section">
+                    <div class="p-label">Покрытие по типам зон</div>
+                    <div id="zones-list"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Карта ── -->
+    <div id="map-wrap">
+        <div id="map"></div>
+        <div class="map-loader" id="map-loader">
+            <div class="spinner-border text-primary mb-2" style="width:1.4rem;height:1.4rem" role="status"></div>
+            <div>Загружаем карту 2GIS…</div>
+        </div>
+
+        <!-- Легенда -->
+        <div id="map-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Тротуар</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Парк / бульвар</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#a855f7"></div> Жилая зона</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div> Переход / зебра</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6b7280"></div> Подземный переход</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#dc2626"></div> Лестница</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const API_KEY = 'bc9d537e-6e92-4751-9017-fe5c28958f30';
+
+const STYLE_COLORS = {
+    normal:         '#3b82f6',
+    crosswalk:      '#f97316',
+    park_path:      '#22c55e',
+    living_zone:    '#a855f7',
+    undergroundway: '#6b7280',
+    archway:        '#b45309',
+    stairway:       '#dc2626',
+};
+
+const CROSSING_COLORS = {
+    on_traffic_light: '#22c55e',
+    onto_crosswalk:   '#f59e0b',
+    empty:            '#ef4444',
+};
+
+// ── Утилиты ─────────────────────────────────────────────────────
+
+function scoreColor(s) {
+    if (s >= 8)   return { ring: '#22c55e', text: '#15803d' };
+    if (s >= 6.5) return { ring: '#84cc16', text: '#4d7c0f' };
+    if (s >= 5)   return { ring: '#f59e0b', text: '#b45309' };
+    if (s >= 3.5) return { ring: '#f97316', text: '#c2410c' };
+    return               { ring: '#ef4444', text: '#b91c1c' };
+}
+
+function scoreLabel(s) {
+    if (s >= 8)   return 'Отличный маршрут';
+    if (s >= 6.5) return 'Хороший маршрут';
+    if (s >= 5)   return 'Умеренно комфортный';
+    return               'Неудобный маршрут';
+}
+
+function formatDate(str) {
+    if (!str) return '—';
+    const [date, time] = str.split(' ');
+    if (!date) return str;
+    const [y, m, d] = date.split('-');
+    return `${d}.${m}.${y}` + (time ? ` ${time.slice(0, 5)}` : '');
+}
+
+// ── Карта ────────────────────────────────────────────────────────
+
+let map = null, mapReady = false;
+let polylines = [], mapMarkers = [];
+
+function parseLinestring(wkt) {
+    const m = wkt.match(/LINESTRING\((.+)\)/);
+    if (!m) return [];
+    return m[1].split(',').map(s => {
+        const [a, b] = s.trim().split(' ').map(Number);
+        return [a, b];
+    }).filter(([a, b]) => !isNaN(a) && !isNaN(b));
+}
+
+function initMap() {
+    try {
+        map = new mapgl.Map('map', { center: [37.62, 55.77], zoom: 11, key: API_KEY });
+        document.getElementById('map-loader').style.display = 'none';
+        mapReady = true;
+    } catch (e) {
+        document.getElementById('map-loader').innerHTML = `
+            <div style="font-size:2rem;color:#f59e0b">⚠</div>
+            <div style="font-weight:600">Карта недоступна</div>
+            <div style="color:#94a3b8;font-size:.78rem;margin-top:6px;text-align:center;max-width:240px">
+                ${e.message}<br>Маршруты и оценки доступны в списке слева.
+            </div>`;
+    }
+}
+
+function clearMap() {
+    polylines.forEach(p => p.destroy());
+    mapMarkers.forEach(m => m.destroy());
+    polylines = [];
+    mapMarkers = [];
+}
+
+function drawRouteOnMap(route) {
+    if (!mapReady) return;
+    clearMap();
+
+    const allCoords = [];
+
+    const beginSel = route.begin_pedestrian_path?.geometry?.selection;
+    if (beginSel) {
+        const c = parseLinestring(beginSel);
+        allCoords.push(...c);
+        if (c.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: c, width: 5, color: '#a855f7', opacity: 0.7 }));
+    }
+
+    (route.maneuvers || []).forEach(mnv => {
+        const type = mnv.type ?? '';
+
+        (mnv.outcoming_path?.geometry || []).forEach(seg => {
+            if (!seg.selection) return;
+            const c = parseLinestring(seg.selection);
+            if (c.length < 2) return;
+            allCoords.push(...c);
+            const color = STYLE_COLORS[seg.style] || STYLE_COLORS.normal;
+            const width = seg.style === 'crosswalk' ? 7 : 5;
+            polylines.push(new mapgl.Polyline(map, { coordinates: c, width, color, opacity: 0.9 }));
+        });
+
+        const attr      = mnv.attribute ?? '';
+        const geoStyles = (mnv.outcoming_path?.geometry || []).map(g => g.style);
+        const isSurfaceCrossing =
+            type === 'pedestrian_road_crossing' ||
+            (type === 'pedestrian_crossroad'
+                && ['onto_crosswalk', 'on_traffic_light'].includes(attr)
+                && !geoStyles.includes('undergroundway'));
+
+        if (type === 'pedestrian_begin' || type === 'pedestrian_end' || isSurfaceCrossing) {
+            const geom = mnv.outcoming_path?.geometry;
+            if (!geom?.[0]?.selection) return;
+            const pts = parseLinestring(geom[0].selection);
+            if (!pts[0]) return;
+            const color = type === 'pedestrian_begin'  ? '#22c55e'
+                        : type === 'pedestrian_end'    ? '#3b82f6'
+                        : attr === 'on_traffic_light'  ? '#16a34a'
+                        :                                '#f97316';
+            mapMarkers.push(new mapgl.CircleMarker(map, {
+                coordinates: pts[0],
+                radius: (type === 'pedestrian_begin' || type === 'pedestrian_end') ? 10 : 7,
+                color,
+                strokeColor: '#ffffff',
+                strokeWidth: 2,
+            }));
+        }
+    });
+
+    const endSel = route.end_pedestrian_path?.geometry?.selection;
+    if (endSel) {
+        const c = parseLinestring(endSel);
+        allCoords.push(...c);
+        if (c.length >= 2)
+            polylines.push(new mapgl.Polyline(map, { coordinates: c, width: 5, color: '#a855f7', opacity: 0.7 }));
+    }
+
+    if (allCoords.length > 1) {
+        const lons = allCoords.map(c => c[0]);
+        const lats = allCoords.map(c => c[1]);
+        const span = Math.max(Math.max(...lons) - Math.min(...lons), Math.max(...lats) - Math.min(...lats));
+        map.setCenter([
+            (Math.min(...lons) + Math.max(...lons)) / 2,
+            (Math.min(...lats) + Math.max(...lats)) / 2,
+        ]);
+        map.setZoom(span > 0.5 ? 10 : span > 0.15 ? 12 : span > 0.05 ? 13 : span > 0.02 ? 15 : 16);
+    }
+
+    document.getElementById('map-legend').style.display = 'block';
+}
+
+// ── Список маршрутов ─────────────────────────────────────────────
+
+function zoneMiniBar(zones) {
+    if (!zones || !Object.keys(zones).length) return '';
+    return '<div class="zone-mini-bar">' +
+        Object.entries(zones).map(([style, z]) => {
+            const pct   = Math.max(1, z.percent || 0);
+            const color = STYLE_COLORS[style] || '#94a3b8';
+            const label = z.label || style;
+            return `<div class="zone-mini-seg" style="width:${pct}%;background:${color}" title="${label}: ${z.percent}%"></div>`;
+        }).join('') +
+        '</div>';
+}
+
+function renderRouteList(routes) {
+    const el = document.getElementById('routes-list');
+
+    if (!routes.length) {
+        el.innerHTML = `
+            <div class="empty-state">
+                <div class="icon">🗺</div>
+                <div style="font-weight:600;color:#475569">Маршрутов пока нет</div>
+                <div style="font-size:.78rem;margin-top:6px">Постройте маршрут на главной странице — он сохранится автоматически.</div>
+                <a href="/" class="btn btn-sm btn-outline-primary mt-3">На главную</a>
+            </div>`;
+        return;
+    }
+
+    el.innerHTML = routes.map(r => {
+        const col  = scoreColor(r.score);
+        const dist = r.ui_distance || `${(r.distance_m / 1000).toFixed(1)} км`;
+        const dur  = r.ui_duration || `${r.duration_min} мин`;
+        const bar  = zoneMiniBar(r.zones);
+
+        return `<div class="route-item" data-id="${r.id}">
+            <div class="route-badge" style="color:${col.text};border-color:${col.ring};background:${col.ring}20">
+                ${r.score}
+            </div>
+            <div class="route-info">
+                <div class="route-dist">${dist} · ${dur}</div>
+                <div class="route-meta">${formatDate(r.saved_at)}</div>
+                <div class="route-detail">${r.road_crossings} пересечений · ${r.sharp_turns} резких поворотов</div>
+                ${bar}
+            </div>
+        </div>`;
+    }).join('');
+
+    el.querySelectorAll('.route-item').forEach(item => {
+        item.addEventListener('click', () => openRoute(item.dataset.id));
+    });
+}
+
+// ── Детальный вид ────────────────────────────────────────────────
+
+async function openRoute(id) {
+    document.querySelectorAll('.route-item').forEach(el =>
+        el.classList.toggle('active', el.dataset.id === id)
+    );
+
+    document.getElementById('route-loader').style.display = 'flex';
+
+    try {
+        const res    = await fetch(`/api/routes/${id}`);
+        const detail = await res.json();
+
+        if (detail.error) throw new Error(detail.error);
+
+        if (detail.route) drawRouteOnMap(detail.route);
+
+        renderScorePanel(detail);
+
+        document.getElementById('routes-list').style.display  = 'none';
+        document.getElementById('score-panel').style.display  = 'block';
+        document.getElementById('panel-header').style.display = 'flex';
+        document.getElementById('panel-scroll').scrollTop     = 0;
+
+        const dist = detail.route?.total_distance
+            ? `${(detail.route.total_distance / 1000).toFixed(1)} км · ${detail.score} / 10`
+            : `${detail.score} / 10`;
+        const tbSel = document.getElementById('tb-selected');
+        tbSel.textContent  = dist;
+        tbSel.style.display = 'inline-block';
+
+    } catch (e) {
+        alert('Ошибка загрузки маршрута: ' + e.message);
+    } finally {
+        document.getElementById('route-loader').style.display = 'none';
+    }
+}
+
+function showList() {
+    document.getElementById('routes-list').style.display  = 'block';
+    document.getElementById('score-panel').style.display  = 'none';
+    document.getElementById('panel-header').style.display = 'none';
+    document.getElementById('tb-selected').style.display  = 'none';
+    document.querySelectorAll('.route-item').forEach(el => el.classList.remove('active'));
+    clearMap();
+    document.getElementById('map-legend').style.display = 'none';
+}
+
+function renderScorePanel(detail) {
+    const { score, path_quality, crossing_safety, turn_simplicity, breakdown } = detail;
+    const col = scoreColor(score);
+
+    // Кольцо
+    const ring  = document.getElementById('score-ring');
+    const numEl = document.getElementById('score-num');
+    ring.style.borderColor = col.ring;
+    numEl.textContent      = score;
+    numEl.style.color      = col.text;
+    const labelEl = document.getElementById('score-label');
+    labelEl.textContent = scoreLabel(score);
+    labelEl.style.color = col.text;
+
+    // Мини-статы
+    document.getElementById('mini-stats').innerHTML = `
+        <div class="mini-stat">
+            <div class="ms-val">${(breakdown.total_distance_m / 1000).toFixed(1)} км</div>
+            <div class="ms-key">Расстояние</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.total_duration_min} мин</div>
+            <div class="ms-key">Время</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.road_crossings}</div>
+            <div class="ms-key">Пересечений</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.turn_count}</div>
+            <div class="ms-key">Поворотов</div>
+        </div>
+        <div class="mini-stat" style="${breakdown.sharp_turns > 0 ? 'border-color:#fca5a5' : ''}">
+            <div class="ms-val" style="${breakdown.sharp_turns > 0 ? 'color:#dc2626' : ''}">${breakdown.sharp_turns}</div>
+            <div class="ms-key">Резких (≥120°)</div>
+        </div>
+        <div class="mini-stat">
+            <div class="ms-val">${breakdown.avg_turn_angle}°</div>
+            <div class="ms-key">Ср. угол</div>
+        </div>
+    `;
+
+    // ── 3-блочная формула ──
+    const pqContrib = (path_quality   * 0.55).toFixed(3);
+    const csContrib = (crossing_safety * 0.30).toFixed(3);
+    const tsContrib = (turn_simplicity * 0.15).toFixed(3);
+
+    // Блок 1: зоны
+    const zonesRows = Object.entries(breakdown.zones).map(([style, z]) => `
+        <tr>
+            <td style="padding:2px 0">
+                <span style="display:inline-block;width:8px;height:8px;border-radius:2px;
+                      background:${STYLE_COLORS[style] || '#94a3b8'};margin-right:4px;vertical-align:middle"></span>
+                <span style="font-size:.71rem">${z.label}</span>
+            </td>
+            <td style="text-align:right;font-size:.69rem;color:#64748b">${z.meters} м</td>
+            <td style="text-align:center;font-size:.69rem;color:#94a3b8">×</td>
+            <td style="text-align:center;font-size:.71rem;font-weight:600">${z.weight}</td>
+            <td style="text-align:right;font-size:.69rem;color:#64748b">=</td>
+            <td style="text-align:right;font-size:.71rem;font-weight:600;color:#334155">${z.contribution}</td>
+        </tr>`).join('');
+
+    // Блок 2: переходы
+    const crossingRows = breakdown.road_crossings === 0
+        ? `<div style="font-size:.72rem;color:#22c55e">Переходов через дорогу нет → 1.0</div>`
+        : (breakdown.crossing_detail || []).map(c => {
+            const color = c.safety >= 1.0 ? CROSSING_COLORS.on_traffic_light
+                        : c.safety >= 0.5 ? CROSSING_COLORS.onto_crosswalk
+                        : CROSSING_COLORS.empty;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.71rem;padding:2px 0">
+                <span>
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                          background:${color};margin-right:4px;vertical-align:middle"></span>
+                    ${c.label}
+                </span>
+                <span style="color:#64748b">${c.count} × ${c.safety} = <strong>${(c.count * c.safety).toFixed(1)}</strong></span>
+            </div>`;
+        }).join('');
+
+    const csFormula = breakdown.road_crossings === 0
+        ? `Нет переходов → <strong>1.0</strong>`
+        : `Σ / ${breakdown.road_crossings} = <strong>${crossing_safety}</strong>`;
+
+    const tsFormula = breakdown.turn_count > 0
+        ? `1 − ${breakdown.avg_turn_angle}° / 180° = <strong>${turn_simplicity}</strong>`
+        : `Поворотов нет → <strong>1.0</strong>`;
+
+    document.getElementById('score-breakdown').innerHTML = `
+        <div style="font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:5px">
+            1. Качество покрытия × 0.55
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:4px">
+            ${zonesRows}
+            <tr style="border-top:1px solid #e2e8f0">
+                <td colspan="5" style="padding-top:3px;font-size:.67rem;color:#64748b">
+                    Σ = ${breakdown.weighted_sum} / ${breakdown.total_meters} м
+                </td>
+                <td style="padding-top:3px;text-align:right;font-size:.71rem;font-weight:700;color:#0284c7">= ${path_quality}</td>
+            </tr>
+        </table>
+        <div style="font-size:.71rem;color:#64748b;margin-bottom:10px;padding:4px 8px;background:#f0f9ff;border-radius:5px">
+            ${path_quality} × 0.55 = <strong>${pqContrib}</strong>
+        </div>
+
+        <div style="font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:5px">
+            2. Безопасность переходов × 0.30
+        </div>
+        <div style="margin-bottom:4px">${crossingRows}</div>
+        <div style="font-size:.71rem;color:#64748b;margin-bottom:10px;padding:4px 8px;background:#fff7ed;border-radius:5px">
+            ${csFormula} × 0.30 = <strong>${csContrib}</strong>
+        </div>
+
+        <div style="font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:5px">
+            3. Прямолинейность × 0.15
+        </div>
+        <div style="font-size:.72rem;color:#334155;margin-bottom:3px">
+            ${breakdown.turn_count} поворотов, ср. угол ${breakdown.avg_turn_angle}°
+        </div>
+        <div style="font-size:.71rem;color:#64748b;margin-bottom:10px;padding:4px 8px;background:#f0fdf4;border-radius:5px">
+            ${tsFormula} × 0.15 = <strong>${tsContrib}</strong>
+        </div>
+
+        <div style="font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:5px">
+            Итог
+        </div>
+        <div class="formula-box">
+            <code>${pqContrib} + ${csContrib} + ${tsContrib} = <strong>${score} / 10</strong></code>
+        </div>
+    `;
+
+    // Зоны (детально)
+    document.getElementById('zones-list').innerHTML = Object.entries(breakdown.zones).map(([style, z]) => `
+        <div class="zone-row">
+            <div class="zone-head">
+                <span class="zone-name">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:2px;
+                          background:${STYLE_COLORS[style] || '#94a3b8'};margin-right:5px;vertical-align:middle"></span>
+                    ${z.label}
+                </span>
+                <span class="zone-meta">${z.meters} м · ${z.percent}%</span>
+            </div>
+            <div class="zone-bar-bg">
+                <div class="zone-bar c-${style}" style="width:${z.percent}%"></div>
+            </div>
+            <div class="zone-w">комфорт ${z.weight}</div>
+        </div>
+    `).join('');
+}
+
+// ── Загрузка списка маршрутов ─────────────────────────────────────
+
+async function loadRoutes() {
+    try {
+        const routes = await fetch('/api/routes').then(r => r.json());
+        document.getElementById('topbar-sub').textContent = `${routes.length} маршрутов`;
+        renderRouteList(routes);
+    } catch (e) {
+        document.getElementById('routes-list').innerHTML = `
+            <div class="empty-state">
+                <div class="icon" style="color:#ef4444">⚠</div>
+                <div style="font-weight:600;color:#dc2626">Ошибка загрузки</div>
+                <div style="font-size:.78rem;margin-top:6px">${e.message}</div>
+            </div>`;
+        document.getElementById('topbar-sub').textContent = 'Ошибка';
+    }
+}
+
+loadRoutes();
+</script>
+
+<script
+    src="https://mapgl.2gis.com/api/js?key=bc9d537e-6e92-4751-9017-fe5c28958f30"
+    onload="initMap()"
+    onerror="document.getElementById('map-loader').innerHTML = '<div style=\'font-size:2rem;color:#f59e0b\'>⚠</div><div style=\'font-weight:600\'>Карта недоступна</div><div style=\'color:#94a3b8;font-size:.78rem;margin-top:6px;text-align:center;max-width:240px\'>2GIS MapGL не загрузился — оценки маршрутов доступны в списке слева.</div>'"
+></script>
+
+</body>
+</html>

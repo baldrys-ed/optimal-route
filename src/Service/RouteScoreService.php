@@ -71,6 +71,17 @@ class RouteScoreService
                 $crossings[] = ['attr' => $attr];
             }
 
+            // pedestrian_crossroad с атрибутом перехода тоже является пересечением дороги.
+            // Исключаем подземные переходы — у них стиль undergroundway в geometry.
+            if ($type === 'pedestrian_crossroad'
+                && in_array($attr, ['onto_crosswalk', 'on_traffic_light'], true)
+            ) {
+                $geoStyles = array_column($maneuver['outcoming_path']['geometry'] ?? [], 'style');
+                if (!in_array('undergroundway', $geoStyles, true)) {
+                    $crossings[] = ['attr' => $attr];
+                }
+            }
+
             if ($type === 'pedestrian_crossroad' && isset($maneuver['turn_angle'])) {
                 $turnAngles[] = abs($maneuver['turn_angle']);
             }

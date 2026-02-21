@@ -334,17 +334,32 @@ function renderMap() {
             polylines.push(new mapgl.Polyline(map, { coordinates: c, width, color, opacity: 0.9 }));
         });
 
-        // маркер только на start/finish и пересечениях дорог
-        const t = mnv.type;
-        if (t === 'pedestrian_begin' || t === 'pedestrian_end' || t === 'pedestrian_road_crossing') {
+        // Маркеры: старт, финиш и все пересечения дороги поверхностью
+        const t    = mnv.type;
+        const attr = mnv.attribute ?? '';
+        const geoStyles = (mnv.outcoming_path?.geometry || []).map(g => g.style);
+        const isSurfaceCrossing =
+            t === 'pedestrian_road_crossing' ||
+            (t === 'pedestrian_crossroad'
+                && ['onto_crosswalk', 'on_traffic_light'].includes(attr)
+                && !geoStyles.includes('undergroundway'));
+
+        if (t === 'pedestrian_begin' || t === 'pedestrian_end' || isSurfaceCrossing) {
             const geom = mnv.outcoming_path?.geometry;
             if (!geom?.[0]?.selection) return;
             const pts = parseLinestring(geom[0].selection);
             if (!pts[0]) return;
-            const color = t === 'pedestrian_begin' ? '#22c55e'
-                        : t === 'pedestrian_end'   ? '#3b82f6'
-                        : '#f97316';
-            markers.push(new mapgl.Marker(map, { coordinates: pts[0], color }));
+            const color = t === 'pedestrian_begin'   ? '#22c55e'
+                        : t === 'pedestrian_end'     ? '#3b82f6'
+                        : attr === 'on_traffic_light'? '#16a34a'
+                        :                              '#f97316';
+            markers.push(new mapgl.CircleMarker(map, {
+                coordinates: pts[0],
+                radius: (t === 'pedestrian_begin' || t === 'pedestrian_end') ? 10 : 7,
+                color,
+                strokeColor: '#ffffff',
+                strokeWidth: 2,
+            }));
         }
     });
 

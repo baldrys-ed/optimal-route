@@ -206,9 +206,12 @@ function renderDropdown(items, dropdown, onSelect) {
 
 function placeMarker(coords, color, existing) {
     if (existing) existing.destroy();
-    return new mapgl.Marker(map, {
+    return new mapgl.CircleMarker(map, {
         coordinates: [coords.lon, coords.lat],
+        radius: 10,
         color,
+        strokeColor: '#ffffff',
+        strokeWidth: 2,
     });
 }
 
@@ -308,11 +311,29 @@ function drawRoute(routeData) {
             routePolylines.push(new mapgl.Polyline(map, { coordinates: c, width, color, opacity: 0.9 }));
         });
 
-        // Маркеры только на старте и финише — промежуточные не ставим
-        if (maneuver.type === 'pedestrian_begin' || maneuver.type === 'pedestrian_end') {
-            const pt = maneuverPoint(maneuver);
-            const color = maneuver.type === 'pedestrian_begin' ? '#22c55e' : '#3b82f6';
-            if (pt) crossingMarkers.push(new mapgl.Marker(map, { coordinates: pt, color }));
+        // Маркеры: старт, финиш и все пересечения дороги поверхностью
+        const mType    = maneuver.type ?? '';
+        const mAttr    = maneuver.attribute ?? '';
+        const mStyles  = (maneuver.outcoming_path?.geometry || []).map(g => g.style);
+        const isSurfaceCrossing =
+            mType === 'pedestrian_road_crossing' ||
+            (mType === 'pedestrian_crossroad'
+                && ['onto_crosswalk', 'on_traffic_light'].includes(mAttr)
+                && !mStyles.includes('undergroundway'));
+
+        if (mType === 'pedestrian_begin' || mType === 'pedestrian_end' || isSurfaceCrossing) {
+            const pt    = maneuverPoint(maneuver);
+            const color = mType === 'pedestrian_begin'   ? '#22c55e'
+                        : mType === 'pedestrian_end'     ? '#3b82f6'
+                        : mAttr === 'on_traffic_light'   ? '#16a34a'
+                        :                                  '#f97316';
+            if (pt) crossingMarkers.push(new mapgl.CircleMarker(map, {
+                coordinates: pt,
+                radius: (mType === 'pedestrian_begin' || mType === 'pedestrian_end') ? 10 : 7,
+                color,
+                strokeColor: '#ffffff',
+                strokeWidth: 2,
+            }));
         }
     });
 
@@ -572,9 +593,13 @@ function renderPOIList(items) {
     items.forEach((item, i) => {
         if (!item.point || !mapGLReady) return;
 
-        const marker = new mapgl.Marker(map, {
+        const marker = new mapgl.CircleMarker(map, {
             coordinates: [item.point.lon, item.point.lat],
+            radius: 8,
             color: '#f59e0b',
+            strokeColor: '#ffffff',
+            strokeWidth: 2,
+            interactive: true,
         });
         poiMarkers.push(marker);
 
@@ -606,9 +631,13 @@ async function selectPOI(item, index, allItems) {
         m.destroy();
         const coords = allItems[i]?.point;
         if (!coords) return;
-        poiMarkers[i] = new mapgl.Marker(map, {
+        poiMarkers[i] = new mapgl.CircleMarker(map, {
             coordinates: [coords.lon, coords.lat],
+            radius: 8,
             color: i === index ? '#3b82f6' : '#f59e0b',
+            strokeColor: '#ffffff',
+            strokeWidth: 2,
+            interactive: true,
         });
         const onClick = () => selectPOI(allItems[i], i, allItems);
         poiMarkers[i].on('click', onClick);
