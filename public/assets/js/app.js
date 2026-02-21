@@ -599,6 +599,13 @@ async function buildRouteToPOI(dest, poiName) {
         currentRouteData = routeData;
         drawRoute(routeData);
 
+        // Сырые данные для анализа
+        const rawEl = document.getElementById('raw-data-json');
+        if (rawEl) {
+            rawEl.textContent = JSON.stringify(routeData.result?.[0] ?? routeData, null, 2);
+        }
+        document.getElementById('raw-data-details')?.removeAttribute('open');
+
         const scoreData = await fetchScore(routeData);
 
         document.getElementById('selected-poi-name').textContent = `📍 ${poiName}`;
