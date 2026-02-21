@@ -5,71 +5,81 @@ namespace App\Service;
 /**
  * Калькулятор оценки пешеходного маршрута на основе данных 2GIS Routing API.
  *
- * Формула: SCORE = path_quality * 0.65 + turn_simplicity * 0.35
+ * Формула:
+ *   SCORE = path_quality * 0.55 + crossing_safety * 0.30 + turn_simplicity * 0.15
  *
- * path_quality   — взвешенная средняя по типам покрытия (park_path, living_zone, normal и т.д.)
- * turn_simplicity — насколько прямой маршрут (штраф за острые повороты)
+ *   path_quality    — взвешенная средняя по типам покрытия (park_path, stairway, normal …)
+ *   crossing_safety — безопасность переходов через дорогу (светофор > зебра > без разметки)
+ *   turn_simplicity — прямолинейность маршрута (штраф за острые повороты)
  */
 class RouteScoreService
 {
     /** Веса комфортности по типу покрытия из geometry[].style */
     private const STYLE_WEIGHTS = [
-        'park_path'     => 1.0,
-        'living_zone'   => 0.9,
-        'undergroundway'=> 0.8,
-        'archway'       => 0.7,
-        'normal'        => 0.5,
-        'crosswalk'     => 0.2,
+        'park_path'      => 1.0,
+        'living_zone'    => 0.9,
+        'undergroundway' => 0.85,
+        'archway'        => 0.7,
+        'normal'         => 0.5,
+        'crosswalk'      => 0.3,
+        'stairway'       => 0.1,
     ];
 
     private const STYLE_LABELS = [
-        'park_path'     => 'Парк / бульвар',
-        'living_zone'   => 'Жилая зона',
-        'undergroundway'=> 'Подземный переход',
-        'archway'       => 'Арка / проход',
-        'normal'        => 'Тротуар',
-        'crosswalk'     => 'Пешеходный переход',
+        'park_path'      => 'Парк / бульвар',
+        'living_zone'    => 'Жилая зона',
+        'undergroundway' => 'Подземный переход',
+        'archway'        => 'Арка / проход',
+        'normal'         => 'Тротуар',
+        'crosswalk'      => 'Пешеходный переход',
+        'stairway'       => 'Лестница',
     ];
 
-    /**
-     * Рассчитать оценку маршрута.
-     *
-     * @param array $route  Элемент result[0] из ответа 2GIS Routing API
-     * @return array{
-     *   score: float,
-     *   path_quality: float,
-     *   turn_simplicity: float,
-     *   breakdown: array
-     * }
-     */
+    /** Безопасность перехода по атрибуту манёвра pedestrian_road_crossing */
+    private const CROSSING_SAFETY = [
+        'on_traffic_light' => 1.0,   // светофор
+        'onto_crosswalk'   => 0.6,   // зебра без светофора
+        'empty'            => 0.2,   // без разметки
+    ];
+
+    private const CROSSING_LABELS = [
+        'on_traffic_light' => 'Со светофором',
+        'onto_crosswalk'   => 'По зебре',
+        'empty'            => 'Без разметки',
+        'none'             => 'Не определён',
+    ];
+
+    /** Веса компонентов итоговой формулы */
+    private const W_PATH  = 0.55;
+    private const W_CROSS = 0.30;
+    private const W_TURNS = 0.15;
+
     public function score(array $route): array
     {
         $maneuvers = $route['maneuvers'] ?? [];
 
-        $styleMeters  = [];   // метры по каждому стилю покрытия
-        $turnAngles   = [];   // углы поворотов на перекрёстках
-        $turnDirs     = [];   // счётчик направлений поворотов
-        $roadCrossings = 0;   // количество пересечений дороги
+        $styleMeters     = [];
+        $turnAngles      = [];
+        $turnDirs        = [];
+        $crossings       = [];   // [{attr, style}, …] — каждый road_crossing
 
         foreach ($maneuvers as $maneuver) {
             $type = $maneuver['type'] ?? '';
+            $attr = $maneuver['attribute'] ?? 'none';
 
             if ($type === 'pedestrian_road_crossing') {
-                $roadCrossings++;
+                $crossings[] = ['attr' => $attr];
             }
 
-            // Повороты на перекрёстках (не считаем пересечения дорог)
             if ($type === 'pedestrian_crossroad' && isset($maneuver['turn_angle'])) {
                 $turnAngles[] = abs($maneuver['turn_angle']);
             }
 
-            // Направления поворотов
             if (isset($maneuver['turn_direction'])) {
                 $dir = $maneuver['turn_direction'];
                 $turnDirs[$dir] = ($turnDirs[$dir] ?? 0) + 1;
             }
 
-            // Метры по типу покрытия из geometry
             foreach ($maneuver['outcoming_path']['geometry'] ?? [] as $geo) {
                 $style  = $geo['style']  ?? 'normal';
                 $length = $geo['length'] ?? 0;
@@ -77,19 +87,27 @@ class RouteScoreService
             }
         }
 
-        // ── Path quality ──────────────────────────────────────────────
+        // ── 1. Path quality ───────────────────────────────────────────
         $totalMeters = array_sum($styleMeters);
         $weightedSum = 0.0;
-
         foreach ($styleMeters as $style => $meters) {
-            $weight       = self::STYLE_WEIGHTS[$style] ?? 0.5;
-            $weightedSum += $meters * $weight;
+            $weightedSum += $meters * (self::STYLE_WEIGHTS[$style] ?? 0.5);
         }
-
         $pathQuality = $totalMeters > 0 ? $weightedSum / $totalMeters : 0.5;
 
-        // ── Turn simplicity ───────────────────────────────────────────
-        // 1 − средний нормализованный угол поворота (0° = 1.0, 180° = 0.0)
+        // ── 2. Crossing safety ────────────────────────────────────────
+        $crossingCount = count($crossings);
+        if ($crossingCount === 0) {
+            $crossingSafety = 1.0;   // нет переходов — максимум
+        } else {
+            $safetySum = 0.0;
+            foreach ($crossings as $c) {
+                $safetySum += self::CROSSING_SAFETY[$c['attr']] ?? 0.2;
+            }
+            $crossingSafety = $safetySum / $crossingCount;
+        }
+
+        // ── 3. Turn simplicity ────────────────────────────────────────
         $turnSimplicity = 1.0;
         if (count($turnAngles) > 0) {
             $avgAngle       = array_sum($turnAngles) / count($turnAngles);
@@ -97,9 +115,12 @@ class RouteScoreService
         }
 
         // ── Итоговый балл ─────────────────────────────────────────────
-        $score = round(($pathQuality * 0.65 + $turnSimplicity * 0.35) * 10, 1);
+        $score = round(
+            ($pathQuality * self::W_PATH + $crossingSafety * self::W_CROSS + $turnSimplicity * self::W_TURNS) * 10,
+            1
+        );
 
-        // ── Разбивка по зонам (сортировка по убыванию метров) ────────
+        // ── Разбивка по зонам ─────────────────────────────────────────
         arsort($styleMeters);
         $zones = [];
         foreach ($styleMeters as $style => $meters) {
@@ -109,11 +130,25 @@ class RouteScoreService
                 'meters'       => (int) round($meters),
                 'percent'      => $totalMeters > 0 ? (int) round($meters / $totalMeters * 100) : 0,
                 'weight'       => $weight,
-                'contribution' => round($meters * $weight),  // вклад в взвешенную сумму
+                'contribution' => (int) round($meters * $weight),
             ];
         }
 
-        // ── Разбивка по поворотам ─────────────────────────────────────
+        // ── Разбивка по переходам ─────────────────────────────────────
+        $crossingsByAttr = [];
+        foreach ($crossings as $c) {
+            $a = $c['attr'];
+            $crossingsByAttr[$a] = ($crossingsByAttr[$a] ?? 0) + 1;
+        }
+        $crossingDetail = [];
+        foreach ($crossingsByAttr as $attr => $cnt) {
+            $crossingDetail[] = [
+                'label'  => self::CROSSING_LABELS[$attr] ?? $attr,
+                'count'  => $cnt,
+                'safety' => self::CROSSING_SAFETY[$attr] ?? 0.2,
+            ];
+        }
+
         arsort($turnDirs);
 
         $avgAngle = count($turnAngles) > 0
@@ -123,11 +158,13 @@ class RouteScoreService
         return [
             'score'          => $score,
             'path_quality'   => round($pathQuality, 3),
+            'crossing_safety'=> round($crossingSafety, 3),
             'turn_simplicity'=> round($turnSimplicity, 3),
             'breakdown'      => [
                 'total_distance_m'   => (int) ($route['total_distance'] ?? $totalMeters),
                 'total_duration_min' => (int) round(($route['total_duration'] ?? 0) / 60),
-                'road_crossings'     => $roadCrossings,
+                'road_crossings'     => $crossingCount,
+                'crossing_detail'    => $crossingDetail,
                 'zones'              => $zones,
                 'turns'              => $turnDirs,
                 'turn_count'         => count($turnAngles),
