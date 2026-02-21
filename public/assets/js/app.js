@@ -1,12 +1,11 @@
 /**
  * Оценка пешего маршрута — 2GIS MapGL JS + Routing API
  *
- * Формула оценки (макс 10 баллов):
- *   A (время)      — макс 4 балла
- *   B (безопасность) — макс 3 балла
- *   C (качество)   — макс 3 балла
- *   D (штраф автодороги) — -0.5 за каждый переход через дорогу
- *   E (штраф переходы)   — -0.3 регулируемый, -0.5 нерегулируемый
+ * Формула оценки (RouteScoreService):
+ *   SCORE = path_quality * 0.65 + turn_simplicity * 0.35
+ *
+ *   path_quality   — взвешенная доля по типам покрытия (park_path, living_zone, normal ...)
+ *   turn_simplicity — прямолинейность (штраф за острые повороты)
  */
 
 const API_KEY = 'bc9d537e-6e92-4751-9017-fe5c28958f30';
@@ -269,6 +268,16 @@ function parseLinestring(wkt) {
     }).filter(([lon, lat]) => !isNaN(lon) && !isNaN(lat));
 }
 
+// Цвета линий по типу покрытия (совпадают с route-score.html)
+const STYLE_COLORS = {
+    normal:         '#3b82f6',
+    crosswalk:      '#f97316',
+    park_path:      '#22c55e',
+    living_zone:    '#a855f7',
+    undergroundway: '#6b7280',
+    archway:        '#b45309',
+};
+
 function drawRoute(routeData) {
     if (!mapGLReady) return;
     clearRoutePolylines();
@@ -276,277 +285,146 @@ function drawRoute(routeData) {
     const route = routeData.result?.[0];
     if (!route) return;
 
-    const coords = [];
+    const allCoords = [];
 
-    // Начальный пешеходный отрезок (от точки A до дороги)
+    // Начальный пешеходный отрезок
     const beginSel = route.begin_pedestrian_path?.geometry?.selection;
-    if (beginSel) coords.push(...parseLinestring(beginSel));
+    if (beginSel) {
+        const c = parseLinestring(beginSel);
+        allCoords.push(...c);
+        if (c.length >= 2)
+            routePolylines.push(new mapgl.Polyline(map, { coordinates: c, width: 5, color: '#a855f7', opacity: 0.7 }));
+    }
 
-    // Все маневры маршрута
+    // Манёвры — каждый сегмент своим цветом по стилю
     (route.maneuvers || []).forEach((maneuver) => {
-        (maneuver.outcoming_path?.geometry || []).forEach((geoItem) => {
-            if (geoItem.selection) {
-                coords.push(...parseLinestring(geoItem.selection));
-            }
+        (maneuver.outcoming_path?.geometry || []).forEach((seg) => {
+            if (!seg.selection) return;
+            const c = parseLinestring(seg.selection);
+            if (c.length < 2) return;
+            allCoords.push(...c);
+            const color = STYLE_COLORS[seg.style] || STYLE_COLORS.normal;
+            const width = seg.style === 'crosswalk' ? 7 : 5;
+            routePolylines.push(new mapgl.Polyline(map, { coordinates: c, width, color, opacity: 0.9 }));
         });
-    });
 
-    // Конечный пешеходный отрезок (от дороги до точки B)
-    const endSel = route.end_pedestrian_path?.geometry?.selection;
-    if (endSel) coords.push(...parseLinestring(endSel));
-
-    if (coords.length < 2) return;
-
-    const polyline = new mapgl.Polyline(map, {
-        coordinates: coords,
-        width: 6,
-        color: '#3b82f6',
-        opacity: 0.85,
-    });
-    routePolylines.push(polyline);
-
-    // Маркеры манёвров
-    // pedestrian_road_crossing — большой маркер с меткой «!»
-    // pedestrian_crossroad    — маленький маркер без метки
-    (route.maneuvers || []).forEach((maneuver) => {
-        const pt = maneuverPoint(maneuver);
-        if (!pt) return;
-
-        let options;
-        if (maneuver.type === 'pedestrian_road_crossing') {
-            options = {
-                coordinates: pt,
-                scale: 1.2,
-                label: { text: '!', fontSize: 14, color: '#ffffff', haloColor: '#ef4444', haloWidth: 3 },
-            };
-        } else if (maneuver.type === 'pedestrian_crossroad') {
-            options = { coordinates: pt, scale: 0.45 };
-        } else {
-            return;
+        // Маркеры только на старте и финише — промежуточные не ставим
+        if (maneuver.type === 'pedestrian_begin' || maneuver.type === 'pedestrian_end') {
+            const pt = maneuverPoint(maneuver);
+            const color = maneuver.type === 'pedestrian_begin' ? '#22c55e' : '#3b82f6';
+            if (pt) crossingMarkers.push(new mapgl.Marker(map, { coordinates: pt, color }));
         }
-
-        crossingMarkers.push(new mapgl.Marker(map, options));
     });
+
+    // Конечный пешеходный отрезок
+    const endSel = route.end_pedestrian_path?.geometry?.selection;
+    if (endSel) {
+        const c = parseLinestring(endSel);
+        allCoords.push(...c);
+        if (c.length >= 2)
+            routePolylines.push(new mapgl.Polyline(map, { coordinates: c, width: 5, color: '#a855f7', opacity: 0.7 }));
+    }
+
+    if (!allCoords.length) return;
 
     // Fit map to route bounds
-    const lons = coords.map((c) => c[0]);
-    const lats = coords.map((c) => c[1]);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-
-    map.setCenter([(minLon + maxLon) / 2, (minLat + maxLat) / 2]);
-
-    const span = Math.max(maxLon - minLon, maxLat - minLat);
-    let zoom = 16;
-    if (span > 0.02) zoom = 15;
-    if (span > 0.05) zoom = 13;
-    if (span > 0.15) zoom = 12;
-    if (span > 0.5)  zoom = 10;
-    map.setZoom(zoom);
+    const lons = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    map.setCenter([(Math.min(...lons) + Math.max(...lons)) / 2, (Math.min(...lats) + Math.max(...lats)) / 2]);
+    const span = Math.max(Math.max(...lons) - Math.min(...lons), Math.max(...lats) - Math.min(...lats));
+    map.setZoom(span > 0.5 ? 10 : span > 0.15 ? 12 : span > 0.05 ? 13 : span > 0.02 ? 15 : 16);
 }
 
 // ─────────────────────────────────────────
-// Route analysis — extract crossing data
+// Score via API
 // ─────────────────────────────────────────
 
-// geometry.style значения для безопасных (внеуличных) переходов
-const SAFE_CROSSING_STYLES = new Set(['pedestrian_bridge', 'overgroundway', 'undergroundway']);
-
-function analyzeRoute(routeData) {
-    const route = routeData.result?.[0];
-    if (!route) return null;
-
-    const duration = route.total_duration || 0; // seconds
-    const distance = route.total_distance || 0; // meters
-
-    let unsafeCrossings  = 0;
-    let safeCrossings    = 0;
-    let crosswalkCount   = 0; // наземный (зебра)
-    let bridgeCount      = 0; // надземный (мост)
-    let undergroundCount = 0; // подземный
-    let turnCount        = 0; // pedestrian_crossroad — повороты по тротуару
-
-    (route.maneuvers || []).forEach((maneuver) => {
-        if (maneuver.type === 'pedestrian_crossroad') {
-            turnCount++;
-            return;
-        }
-        if (maneuver.type !== 'pedestrian_road_crossing') return;
-
-        const styles = (maneuver.outcoming_path?.geometry || []).map(g => g.style || '');
-
-        if (styles.some(s => s === 'pedestrian_bridge' || s === 'overgroundway')) {
-            bridgeCount++;
-            safeCrossings++;
-        } else if (styles.some(s => s === 'undergroundway' || s === 'tunnel')) {
-            undergroundCount++;
-            safeCrossings++;
-        } else {
-            crosswalkCount++;
-            unsafeCrossings++;
-        }
+async function fetchScore(routeData) {
+    const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ route: routeData.result[0] }),
     });
-
-    return {
-        duration,
-        distance,
-        unsafeCrossings,
-        safeCrossings,
-        crosswalkCount,
-        bridgeCount,
-        undergroundCount,
-        turnCount,
-        totalCrossings: unsafeCrossings + safeCrossings,
-        durationMin: Math.round(duration / 60),
-    };
-}
-
-// ─────────────────────────────────────────
-// Scoring formula
-// ─────────────────────────────────────────
-
-function calculateScore(analysis) {
-    const { duration, distance, unsafeCrossings, safeCrossings, totalCrossings } = analysis;
-    const durationMin = duration / 60;
-    const distKm      = distance / 1000;
-
-    // A — Время (макс 4)
-    let A, aThr;
-    if      (durationMin <= 5)  { A = 4; aThr = '≤ 5 мин'; }
-    else if (durationMin <= 10) { A = 3; aThr = '≤ 10 мин'; }
-    else if (durationMin <= 20) { A = 2; aThr = '≤ 20 мин'; }
-    else                        { A = 1; aThr = '> 20 мин'; }
-
-    // B — Расстояние (макс 3)
-    let B, bThr;
-    if      (distKm <= 0.5) { B = 3; bThr = '≤ 0.5 км'; }
-    else if (distKm <= 1.5) { B = 2; bThr = '≤ 1.5 км'; }
-    else                    { B = 1; bThr = '> 1.5 км'; }
-
-    // C — только небезопасные переходы (мосты/тоннели НЕ штрафуются)
-    let C, cThr;
-    if      (unsafeCrossings === 0) { C = 3; cThr = '0 открытых переходов'; }
-    else if (unsafeCrossings <= 3)  { C = 2; cThr = '≤ 3 открытых'; }
-    else                            { C = 1; cThr = '> 3 открытых'; }
-
-    // D — штраф только за открытые переходы через дорогу (−0.4 каждый)
-    const D = Math.round(unsafeCrossings * 0.4 * 10) / 10;
-
-    const raw   = A + B + C - D;
-    const total = Math.max(0, Math.min(10, Math.round(raw * 10) / 10));
-
-    return {
-        total, A, B, C, D,
-        aThr, bThr, cThr,
-        durationMin: Math.round(durationMin),
-        distKm:      Math.round(distKm * 10) / 10,
-        distance,
-        unsafeCrossings,
-        safeCrossings,
-        totalCrossings,
-        crosswalkCount:   analysis.crosswalkCount,
-        bridgeCount:      analysis.bridgeCount,
-        undergroundCount: analysis.undergroundCount,
-        turnCount:        analysis.turnCount,
-    };
+    if (!res.ok) throw new Error(`/api/analyze error: ${res.status}`);
+    return res.json();
 }
 
 // ─────────────────────────────────────────
 // Display score UI
 // ─────────────────────────────────────────
 
-function displayScore(score) {
+const STYLE_LABELS = {
+    normal:         'Тротуар',
+    crosswalk:      'Пешеходный переход',
+    park_path:      'Парк / бульвар',
+    living_zone:    'Жилая зона',
+    undergroundway: 'Подземный переход',
+    archway:        'Арка / проход',
+};
+
+function displayScore(data) {
+    const { score, path_quality, turn_simplicity, breakdown } = data;
+
     document.getElementById('score-card').classList.remove('d-none');
 
+    // Кружок оценки
     const circle = document.getElementById('score-circle');
-    document.getElementById('total-score').textContent = score.total;
-
+    document.getElementById('total-score').textContent = score;
     circle.className = 'score-circle mx-auto';
-    if (score.total >= 8)      circle.classList.add('score-excellent');
-    else if (score.total >= 6) circle.classList.add('score-good');
-    else if (score.total >= 4) circle.classList.add('score-ok');
-    else                       circle.classList.add('score-bad');
+    if      (score >= 8)   circle.classList.add('score-excellent');
+    else if (score >= 6.5) circle.classList.add('score-good');
+    else if (score >= 5)   circle.classList.add('score-ok');
+    else                   circle.classList.add('score-bad');
 
-    const [, text, cls] = score.total >= 8 ? ['', 'Отличный маршрут', 'success']
-        : score.total >= 6 ? ['', 'Хороший маршрут', 'warning']
-        : score.total >= 4 ? ['', 'Удовлетворительно', 'secondary']
-        : ['', 'Неудобный маршрут', 'danger'];
-    document.getElementById('score-label').innerHTML = `<span class="badge bg-${cls}">${text}</span>`;
+    const labelText = score >= 8   ? 'Отличный маршрут'
+                    : score >= 6.5 ? 'Хороший маршрут'
+                    : score >= 5   ? 'Умеренно комфортный'
+                    : 'Неудобный маршрут';
+    const labelCls  = score >= 8 ? 'success' : score >= 6.5 ? 'warning' : score >= 5 ? 'secondary' : 'danger';
+    document.getElementById('score-label').innerHTML =
+        `<span class="badge bg-${labelCls}">${labelText}</span>`;
 
-    const distStr = score.distance >= 1000
-        ? `${(score.distance / 1000).toFixed(1)} км`
-        : `${Math.round(score.distance)} м`;
-    document.getElementById('stat-duration').textContent = `${score.durationMin} мин`;
-    document.getElementById('stat-distance').textContent = distStr;
+    // Время и расстояние
+    const distM = breakdown.total_distance_m;
+    document.getElementById('stat-duration').textContent = `${breakdown.total_duration_min} мин`;
+    document.getElementById('stat-distance').textContent =
+        distM >= 1000 ? `${(distM / 1000).toFixed(1)} км` : `${distM} м`;
 
-    // Formula breakdown
-    const safeNote = score.safeCrossings > 0
-        ? ` <span class="text-success">(+${score.safeCrossings} безопасных)</span>` : '';
-
-    const penaltyRow = score.D > 0
-        ? `<tr>
-            <td class="text-muted ps-2">D</td>
-            <td class="text-danger">Штраф</td>
-            <td class="text-muted">${score.unsafeCrossings} откр. × 0.4</td>
-            <td class="text-end text-danger fw-semibold">−${score.D}</td>
-           </tr>`
-        : '';
+    // Формула + зоны
+    const zonesHtml = Object.entries(breakdown.zones).map(([style, z]) => `
+        <div style="margin-bottom:7px">
+            <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:2px">
+                <span style="font-weight:600;color:#334155">${z.label}</span>
+                <span style="color:#94a3b8">${z.meters} м · ${z.percent}%</span>
+            </div>
+            <div style="height:7px;background:#f1f5f9;border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${z.percent}%;background:${STYLE_COLORS[style] || '#3b82f6'};border-radius:4px"></div>
+            </div>
+        </div>`).join('');
 
     document.getElementById('score-breakdown').innerHTML = `
-        <div class="formula-box mb-2">
-            <code class="small">A + B + C − D = итог</code>
+        <div class="formula-box mb-3" style="font-size:.8rem">
+            <code>${path_quality} × 0.65 &nbsp;+&nbsp; ${turn_simplicity} × 0.35 &nbsp;=&nbsp; <strong>${score}</strong> / 10</code>
         </div>
-        <table class="w-100 small" style="border-collapse:separate; border-spacing:0 3px;">
-          <thead>
-            <tr class="text-muted" style="font-size:0.7rem; text-transform:uppercase; letter-spacing:.05em;">
-              <th class="ps-2" style="width:18px"></th>
-              <th>Параметр</th>
-              <th>Условие</th>
-              <th class="text-end">Балл</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="ps-2 text-muted">A</td>
-              <td>Время</td>
-              <td class="text-muted">${score.aThr} → макс 4</td>
-              <td class="text-end text-success fw-semibold">+${score.A}</td>
-            </tr>
-            <tr>
-              <td class="ps-2 text-muted">B</td>
-              <td>Расстояние</td>
-              <td class="text-muted">${score.bThr} → макс 3</td>
-              <td class="text-end text-success fw-semibold">+${score.B}</td>
-            </tr>
-            <tr>
-              <td class="ps-2 text-muted">C</td>
-              <td>Пересечения${safeNote}</td>
-              <td class="text-muted">${score.cThr} → макс 3</td>
-              <td class="text-end text-success fw-semibold">+${score.C}</td>
-            </tr>
-            ${penaltyRow}
-          </tbody>
-          <tfoot>
-            <tr style="border-top:2px solid #e5e7eb;">
-              <td colspan="3" class="pt-2 ps-2 fw-semibold">
-                ${score.A} + ${score.B} + ${score.C}${score.D > 0 ? ` − ${score.D}` : ''}
-              </td>
-              <td class="pt-2 text-end fw-bold fs-6">${score.total} / 10</td>
-            </tr>
-          </tfoot>
-        </table>`;
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:8px">
+            Покрытие маршрута
+        </div>
+        ${zonesHtml}`;
 
-    const totalRoadCrossings = score.crosswalkCount + score.bridgeCount + score.undergroundCount;
+    // Итоговая статистика
+    const turns = breakdown.turns || {};
+    const sharpCount = (turns['sharply_left'] || 0) + (turns['sharply_right'] || 0);
     document.getElementById('crossing-summary').innerHTML = `
-        <div class="d-flex gap-2 mt-1">
+        <div class="d-flex flex-wrap gap-2 mt-1">
             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle px-2 py-1">
-                🚶 Переходов через дорогу: <strong>${totalRoadCrossings}</strong>
+                Переходов дорог: <strong>${breakdown.road_crossings}</strong>
             </span>
             <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle px-2 py-1">
-                ↩ Поворотов: <strong>${score.turnCount}</strong>
+                Поворотов: <strong>${breakdown.turn_count}</strong>
             </span>
+            ${sharpCount > 0 ? `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle px-2 py-1">
+                Резких: <strong>${sharpCount}</strong>
+            </span>` : ''}
         </div>`;
 }
 
@@ -684,15 +562,14 @@ async function buildRouteToPOI(dest, poiName) {
         currentRouteData = routeData;
         drawRoute(routeData);
 
-        const analysis = analyzeRoute(routeData);
-        const score    = calculateScore(analysis);
+        const scoreData = await fetchScore(routeData);
 
         document.getElementById('selected-poi-name').textContent = `📍 ${poiName}`;
         document.getElementById('map-hint').textContent = '';
 
         // Скрываем список, показываем оценку
         document.getElementById('poi-card').classList.add('d-none');
-        displayScore(score);
+        displayScore(scoreData);
 
         // Кнопка «← Список»
         document.getElementById('back-btn').onclick = () => {
