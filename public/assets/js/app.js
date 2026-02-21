@@ -455,10 +455,10 @@ function displayScore(data) {
     const avgSafety = n > 0
         ? (breakdown.crossing_detail || []).reduce((s, c) => s + c.count * c.safety, 0) / n
         : 1.0;
-    const penalty = n > 0 ? Math.exp(-0.05 * n) : 1.0;
+    const penalty = n > 0 ? Math.max(0, 1 - 0.05 * n) : 1.0;
     const csFormula = n === 0
         ? `Нет переходов → <strong>1.0</strong>`
-        : `avg ${avgSafety.toFixed(3)} × exp(−0.05×${n}) = ${penalty.toFixed(3)} → <strong>${crossing_safety}</strong>`;
+        : `avg ${avgSafety.toFixed(3)} × max(0, 1−0.05×${n}) = ${penalty.toFixed(3)} → <strong>${crossing_safety}</strong>`;
 
     // ── Блок 3: Прямолинейность × 0.15 ──
     const tsContrib = (turn_simplicity * 0.15).toFixed(3);
