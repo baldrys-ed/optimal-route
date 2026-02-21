@@ -107,6 +107,9 @@ class RouteScoreService
         $pathQuality = $totalMeters > 0 ? $weightedSum / $totalMeters : 0.5;
 
         // ── 2. Crossing safety ────────────────────────────────────────
+        // avg_safety    — средняя безопасность одного перехода по типу
+        // quantity_penalty — штраф за количество: exp(−0.08 × n)
+        //   0 переходов → 1.0, 6 → 0.62, 10 → 0.45, 14 → 0.33
         $crossingCount = count($crossings);
         if ($crossingCount === 0) {
             $crossingSafety = 1.0;   // нет переходов — максимум
@@ -115,7 +118,9 @@ class RouteScoreService
             foreach ($crossings as $c) {
                 $safetySum += self::CROSSING_SAFETY[$c['attr']] ?? 0.2;
             }
-            $crossingSafety = $safetySum / $crossingCount;
+            $avgSafety       = $safetySum / $crossingCount;
+            $quantityPenalty = exp(-0.08 * $crossingCount);
+            $crossingSafety  = $avgSafety * $quantityPenalty;
         }
 
         // ── 3. Turn simplicity ────────────────────────────────────────
